@@ -1,3 +1,7 @@
+<?php
+// Include admin authentication
+require_once "../admin_auth.php";
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -83,7 +87,7 @@
                   <img class="inline-block h-10 w-10 rounded-full" src="https://via.placeholder.com/150" alt="Profile photo">
                 </div>
                 <div class="ml-3">
-                  <p class="text-base font-medium text-white">Admin User</p>
+                  <p class="text-base font-medium text-white"><?php echo htmlspecialchars($_SESSION["name"]); ?></p>
                   <p class="text-sm font-medium text-primary-200 group-hover:text-primary-100">View profile</p>
                 </div>
               </div>
@@ -131,7 +135,7 @@
                   <div id="user-dropdown" class="hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu">
                     <a href="profile.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">Your Profile</a>
                     <a href="settings.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">Settings</a>
-                    <a href="logout.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">Logout</a>
+                    <a href="../logout.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">Logout</a>
                   </div>
                 </div>
               </div>
@@ -450,7 +454,7 @@
               <img class="inline-block h-10 w-10 rounded-full" src="https://via.placeholder.com/150" alt="">
             </div>
             <div class="ml-3">
-              <p class="text-base font-medium text-white">Admin User</p>
+              <p class="text-base font-medium text-white"><?php echo htmlspecialchars($_SESSION["name"]); ?></p>
               <p class="text-sm font-medium text-primary-200 group-hover:text-primary-100">View profile</p>
             </div>
           </div>
