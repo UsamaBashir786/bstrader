@@ -1,6 +1,6 @@
 <?php
 // Include user authentication
-require_once "../auth.php";
+require_once "../config/user-auth.php";
 ?>
 <!DOCTYPE html>
 <html lang="en">

@@ -1,6 +1,6 @@
 <?php
 // Include admin authentication
-require_once "../admin_auth.php";
+require_once "../config/admin-auth.php";
 ?>
 <!DOCTYPE html>
 <html lang="en">
