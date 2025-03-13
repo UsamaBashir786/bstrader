@@ -103,7 +103,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <html lang="en">
 
 <head>
-<?php include 'includes/css-links.php' ?>
+  <?php include 'includes/css-links.php' ?>
   <script>
     tailwind.config = {
       theme: {
@@ -129,19 +129,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 </head>
 
 <body class="bg-gray-50 min-h-screen flex flex-col">
-  <!-- Header -->
-  <header class="bg-primary-700 shadow-md">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-      <div class="flex justify-between items-center">
-        <div class="flex items-center">
-          <span class="text-2xl font-bold text-white">BS Traders</span>
-        </div>
-        <div>
-          <a href="register.php" class="text-white hover:text-primary-100 font-medium">Need an account? Register</a>
-        </div>
-      </div>
-    </div>
-  </header>
+  <?php include 'includes/navbar.php' ?>
+
 
   <!-- Main Content -->
   <main class="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">

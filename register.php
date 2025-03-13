@@ -240,19 +240,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 </head>
 
 <body class="bg-gray-50 min-h-screen flex flex-col">
-  <!-- Header -->
-  <header class="bg-primary-700 shadow-md">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-      <div class="flex justify-between items-center">
-        <div class="flex items-center">
-          <span class="text-2xl font-bold text-white">BS Traders</span>
-        </div>
-        <div>
-          <a href="login.php" class="text-white hover:text-primary-100 font-medium">Already have an account? Sign in</a>
-        </div>
-      </div>
-    </div>
-  </header>
+  <?php include 'includes/navbar.php' ?>
 
   <!-- Main Content -->
   <main class="flex-grow py-10 px-4 sm:px-6 lg:px-8">
