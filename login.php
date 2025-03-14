@@ -101,152 +101,133 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BS Traders - Sign In</title>
   <?php include 'includes/css-links.php' ?>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: {
-              50: '#e6f1ff',
-              100: '#cce3ff',
-              200: '#99c7ff',
-              300: '#66aaff',
-              400: '#338eff',
-              500: '#0072ff',
-              600: '#005bcc',
-              700: '#004499',
-              800: '#002e66',
-              900: '#001733',
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 </head>
-
-<body class="bg-gray-50 min-h-screen flex flex-col">
+<body class="bg-gray-100 min-h-screen flex flex-col">
   <?php include 'includes/navbar.php' ?>
 
-
-  <!-- Main Content -->
-  <main class="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full">
-      <div class="bg-white shadow-xl rounded-lg overflow-hidden">
-        <!-- Form Header -->
-        <div class="bg-primary-600 px-6 py-4">
+  <div class="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+      <!-- Logo and Header -->
+      <div class="text-center">
+        <h1 class="text-3xl font-bold text-indigo-800">BS Traders</h1>
+        <p class="text-gray-600 mt-2">Access your trading account</p>
+      </div>
+      
+      <!-- Main Card -->
+      <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <!-- Header Banner -->
+        <div class="bg-indigo-600 py-6 px-8">
           <h2 class="text-2xl font-bold text-white">Welcome Back</h2>
-          <p class="text-primary-100 mt-1">Sign in to your BS Traders account</p>
+          <p class="text-indigo-100 mt-1">Sign in to continue to your dashboard</p>
         </div>
-
-        <!-- Form Content -->
-        <div class="p-6">
-          <?php
-          if (!empty($login_err)) {
-            echo '<div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
-                    <div class="flex">
-                      <div class="flex-shrink-0">
-                        <i class="fas fa-exclamation-circle"></i>
-                      </div>
-                      <div class="ml-3">
-                        <p class="text-sm">' . $login_err . '</p>
-                      </div>
-                    </div>
-                  </div>';
-          }
-          ?>
-
-          <!-- This is the updated login form with borders -->
-          <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="POST">
-            <div class="space-y-6">
-              <div>
-                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                <div class="relative rounded-md shadow-sm">
-                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <i class="fas fa-envelope text-gray-400"></i>
-                  </div>
-                  <input type="email" name="email" id="email" class="focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 pr-3 py-2 sm:text-sm border border-gray-400 rounded-md" placeholder="you@example.com" value="<?php echo $email; ?>">
+        
+        <!-- Form -->
+        <div class="p-8">
+          <?php if (!empty($login_err)): ?>
+            <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <i class="fas fa-exclamation-circle"></i>
                 </div>
-                <?php if (!empty($email_err)) : ?>
-                  <p class="mt-1 text-sm text-red-600"><?php echo $email_err; ?></p>
-                <?php endif; ?>
-              </div>
-
-              <div>
-                <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <div class="relative rounded-md shadow-sm">
-                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <i class="fas fa-lock text-gray-400"></i>
-                  </div>
-                  <input type="password" name="password" id="password" class="focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 pr-3 py-2 sm:text-sm border border-gray-400 rounded-md" placeholder="••••••••">
+                <div class="ml-3">
+                  <p class="text-sm"><?php echo $login_err; ?></p>
                 </div>
-                <?php if (!empty($password_err)) : ?>
-                  <p class="mt-1 text-sm text-red-600"><?php echo $password_err; ?></p>
-                <?php endif; ?>
-              </div>
-
-              <!-- Rest of the form remains the same -->
-              <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                  <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
-                  <label for="remember-me" class="ml-2 block text-sm text-gray-700">Remember me</label>
-                </div>
-                <div class="text-sm">
-                  <a href="forgot_password.php" class="font-medium text-primary-600 hover:text-primary-500">Forgot password?</a>
-                </div>
-              </div>
-
-              <div>
-                <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                  <i class="fas fa-sign-in-alt mr-2"></i> Sign in
-                </button>
               </div>
             </div>
+          <?php endif; ?>
+          
+          <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="POST" class="space-y-6">
+            <!-- Email Field -->
+            <div>
+              <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                  <i class="fas fa-envelope"></i>
+                </span>
+                <input type="email" id="email" name="email" placeholder="you@example.com" value="<?php echo $email; ?>"
+                  class="pl-10 w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 <?php echo (!empty($email_err)) ? 'border-red-500' : ''; ?>">
+              </div>
+              <?php if (!empty($email_err)): ?>
+                <p class="mt-1 text-sm text-red-600"><?php echo $email_err; ?></p>
+              <?php endif; ?>
+            </div>
+            
+            <!-- Password Field -->
+            <div>
+              <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                  <i class="fas fa-lock"></i>
+                </span>
+                <input type="password" id="password" name="password" placeholder="••••••••"
+                  class="pl-10 w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 <?php echo (!empty($password_err)) ? 'border-red-500' : ''; ?>">
+              </div>
+              <?php if (!empty($password_err)): ?>
+                <p class="mt-1 text-sm text-red-600"><?php echo $password_err; ?></p>
+              <?php endif; ?>
+            </div>
+            
+            <!-- Remember Me & Forgot Password -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <input id="remember-me" name="remember-me" type="checkbox" 
+                  class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                <label for="remember-me" class="ml-2 block text-sm text-gray-700">Remember me</label>
+              </div>
+              <div class="text-sm">
+                <a href="forgot_password.php" class="font-medium text-indigo-600 hover:text-indigo-500">Forgot password?</a>
+              </div>
+            </div>
+            
+            <!-- Submit Button -->
+            <div>
+              <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <i class="fas fa-sign-in-alt mr-2"></i> Sign in
+              </button>
+            </div>
           </form>
-        </div>
-      </div>
-
-      <!-- Register Link -->
-      <div class="mt-6 text-center">
-        <p class="text-sm text-gray-600">
-          Don't have an account yet? <a href="register.php" class="font-medium text-primary-600 hover:text-primary-500">Create an account</a>
-        </p>
-      </div>
-
-      <!-- Alternative Login Options -->
-      <div class="mt-6">
-        <div class="relative">
-          <div class="absolute inset-0 flex items-center">
-            <div class="w-full border-t border-gray-300"></div>
+          
+          <!-- Divider -->
+          <div class="mt-8 relative">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-gray-300"></div>
+            </div>
+            <div class="relative flex justify-center text-sm">
+              <span class="px-2 bg-white text-gray-500">Or continue with</span>
+            </div>
           </div>
-          <div class="relative flex justify-center text-sm">
-            <span class="px-2 bg-gray-50 text-gray-500">Or continue with</span>
-          </div>
-        </div>
-
-        <div class="mt-6 grid grid-cols-2 gap-3">
-          <div>
-            <a href="#" class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-              <i class="fab fa-google"></i>
+          
+          <!-- Social Login -->
+          <div class="mt-6 grid grid-cols-2 gap-3">
+            <a href="#" class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors">
+              <i class="fab fa-google text-red-500"></i>
               <span class="ml-2">Google</span>
             </a>
-          </div>
-          <div>
-            <a href="#" class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-              <i class="fab fa-facebook-f"></i>
+            <a href="#" class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors">
+              <i class="fab fa-facebook-f text-blue-600"></i>
               <span class="ml-2">Facebook</span>
             </a>
           </div>
         </div>
       </div>
+      
+      <!-- Register Link -->
+      <div class="text-center">
+        <p class="text-sm text-gray-600">
+          Don't have an account yet? <a href="register.php" class="font-medium text-indigo-600 hover:text-indigo-500">Create an account</a>
+        </p>
+      </div>
     </div>
-  </main>
+  </div>
 
   <!-- Footer -->
-  <footer class="bg-gray-800">
+  <footer class="bg-gray-800 mt-auto">
     <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       <div class="flex flex-col md:flex-row justify-between items-center">
         <div class="text-gray-300 text-sm">
@@ -254,16 +235,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
         <div class="mt-4 md:mt-0">
           <div class="flex space-x-6">
-            <a href="#" class="text-gray-400 hover:text-white">
+            <a href="#" class="text-gray-400 hover:text-white transition-colors">
               <i class="fab fa-facebook-f"></i>
             </a>
-            <a href="#" class="text-gray-400 hover:text-white">
+            <a href="#" class="text-gray-400 hover:text-white transition-colors">
               <i class="fab fa-twitter"></i>
             </a>
-            <a href="#" class="text-gray-400 hover:text-white">
+            <a href="#" class="text-gray-400 hover:text-white transition-colors">
               <i class="fab fa-instagram"></i>
             </a>
-            <a href="#" class="text-gray-400 hover:text-white">
+            <a href="#" class="text-gray-400 hover:text-white transition-colors">
               <i class="fab fa-linkedin-in"></i>
             </a>
           </div>
@@ -272,5 +253,4 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </div>
   </footer>
 </body>
-
 </html>

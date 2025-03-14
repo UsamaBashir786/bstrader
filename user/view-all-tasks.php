@@ -112,299 +112,138 @@ $conn->close();
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BS Traders - My Tasks</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: {
-              50: '#e6f1ff',
-              100: '#cce3ff',
-              200: '#99c7ff',
-              300: '#66aaff',
-              400: '#338eff',
-              500: '#0072ff',
-              600: '#005bcc',
-              700: '#004499',
-              800: '#002e66',
-              900: '#001733',
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
   <style>
-    /* Base input styling */
-    input[type="text"],
-    input[type="date"],
-    input[type="email"],
-    input[type="number"],
-    input[type="password"],
-    textarea,
-    select {
-      border: 2px solid #d1d5db;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-      background-color: #f9fafb;
-      transition: all 0.2s ease-in-out;
-      outline: none;
-      padding: 10px;
-    }
-
-    /* Hover state */
-    input[type="text"]:hover,
-    input[type="date"]:hover,
-    input[type="email"]:hover,
-    input[type="number"]:hover,
-    input[type="password"]:hover,
-    textarea:hover,
-    select:hover {
-      border-color: #9ca3af;
-    }
-
-    /* Focus state */
-    input[type="text"]:focus,
-    input[type="date"]:focus,
-    input[type="email"]:focus,
-    input[type="number"]:focus,
-    input[type="password"]:focus,
-    textarea:focus,
-    select:focus {
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
-    }
-
-    /* Make the dropdown arrow more visible in select elements */
-    select {
-      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-      background-position: right 0.5rem center;
-      background-repeat: no-repeat;
-      background-size: 1.5em 1.5em;
-      padding-right: 2.5rem;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      appearance: none;
+    .main-style {
+      height: 100vh;
+      overflow-y: auto;
     }
   </style>
 </head>
 
-<body class="bg-gray-50">
-  <div class="flex h-screen overflow-hidden">
-    <!-- Sidebar / Navigation -->
-    <div class="hidden md:flex md:flex-shrink-0">
-      <div class="flex flex-col w-64">
-        <div class="flex flex-col h-0 flex-1 bg-primary-700">
-          <!-- Logo -->
-          <div class="flex items-center h-16 flex-shrink-0 px-4 bg-primary-800">
-            <span class="text-2xl font-bold text-white">BS Traders</span>
+<body class="bg-gray-100 min-h-screen">
+  <div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <aside class="hidden md:block bg-indigo-800 text-white w-64 p-4 flex-shrink-0">
+      <div class="flex items-center justify-center h-16">
+        <h1 class="text-2xl font-bold">BS Traders</h1>
+      </div>
+
+      <!-- User profile section -->
+      <div class="mt-6 border-t border-indigo-700 pt-4">
+        <div class="flex items-center">
+          <div class="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center text-lg font-bold">
+            <?php echo substr($_SESSION["name"], 0, 1); ?>
           </div>
-          <!-- User info -->
-          <div class="flex-shrink-0 flex border-t border-primary-800 p-4">
-            <a href="user-profile.php" class="flex-shrink-0 group block">
-              <div class="flex items-center">
-                <div>
-                  <img class="inline-block h-10 w-10 rounded-full" src="https://via.placeholder.com/150" alt="">
-                </div>
-                <div class="ml-3">
-                  <p class="text-base font-medium text-white"><?php echo htmlspecialchars($_SESSION["name"]); ?></p>
-                  <p class="text-sm font-medium text-primary-200 group-hover:text-primary-100">Customer Account</p>
-                </div>
-              </div>
-            </a>
-          </div>
-          <!-- Navigation -->
-          <div class="flex-1 flex flex-col overflow-y-auto">
-            <nav class="flex-1 px-2 py-4 space-y-1">
-              <a href="index.php" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-primary-100 hover:bg-primary-600 hover:text-white">
-                <i class="fas fa-home mr-4 h-6 w-6"></i>
-                Dashboard
-              </a>
-              <a href="user-orders.php" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-primary-100 hover:bg-primary-600 hover:text-white">
-                <i class="fas fa-shopping-cart mr-4 h-6 w-6"></i>
-                My Orders
-              </a>
-              <a href="user-quotes.php" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-primary-100 hover:bg-primary-600 hover:text-white">
-                <i class="fas fa-file-invoice-dollar mr-4 h-6 w-6"></i>
-                Quotations
-              </a>
-              <a href="task-upload.php" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-primary-100 hover:bg-primary-600 hover:text-white">
-                <i class="fas fa-upload mr-4 h-6 w-6"></i>
-                Upload Task
-              </a>
-              <a href="view-all-tasks.php" class="group flex items-center px-2 py-2 text-base font-medium rounded-md bg-primary-800 text-white">
-                <i class="fas fa-tasks mr-4 h-6 w-6"></i>
-                My Tasks
-              </a>
-              <a href="user-products.php" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-primary-100 hover:bg-primary-600 hover:text-white">
-                <i class="fas fa-boxes mr-4 h-6 w-6"></i>
-                Products
-              </a>
-              <a href="user-invoices.php" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-primary-100 hover:bg-primary-600 hover:text-white">
-                <i class="fas fa-file-invoice mr-4 h-6 w-6"></i>
-                Invoices
-              </a>
-              <a href="user-support.php" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-primary-100 hover:bg-primary-600 hover:text-white">
-                <i class="fas fa-headset mr-4 h-6 w-6"></i>
-                Support
-              </a>
-              <a href="user-profile.php" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-primary-100 hover:bg-primary-600 hover:text-white">
-                <i class="fas fa-user-circle mr-4 h-6 w-6"></i>
-                My Profile
-              </a>
-              <a href="user-settings.php" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-primary-100 hover:bg-primary-600 hover:text-white">
-                <i class="fas fa-cog mr-4 h-6 w-6"></i>
-                Settings
-              </a>
-            </nav>
+          <div class="ml-3">
+            <p class="text-sm font-medium"><?php echo htmlspecialchars($_SESSION["name"]); ?></p>
+            <p class="text-xs text-indigo-300">Customer Account</p>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Mobile sidebar (hidden by default) -->
-    <div id="mobile-sidebar" class="fixed inset-0 z-40 hidden">
-      <div class="fixed inset-0 bg-gray-600 bg-opacity-75"></div>
-      <div class="relative flex-1 flex flex-col max-w-xs w-full bg-primary-700">
-        <div class="absolute top-0 right-0  pt-2">
-          <button id="closeSidebar" class="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
-            <span class="sr-only">Close sidebar</span>
-            <i class="fas fa-times text-white"></i>
-          </button>
-        </div>
-        <div class="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-          <div class="flex-shrink-0 flex items-center px-4">
-            <span class="text-2xl font-bold text-white">BS Traders</span>
+      <!-- Navigation -->
+      <nav class="mt-8 space-y-1">
+        <a href="index.php" class="flex items-center px-4 py-2 bg-indigo-700 text-white rounded-lg">
+          <i class="fas fa-home w-5 h-5 mr-3"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="task-upload.php" class="flex items-center px-4 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700 hover:text-white">
+          <i class="fas fa-tasks w-5 h-5 mr-3"></i>
+          <span>Upload Task</span>
+        </a>
+        <a href="user-invoices.php" class="flex items-center px-4 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700 hover:text-white">
+          <i class="fas fa-file-invoice w-5 h-5 mr-3"></i>
+          <span>Invoices</span>
+        </a>
+        <a href="user-support.php" class="flex items-center px-4 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700 hover:text-white">
+          <i class="fas fa-headset w-5 h-5 mr-3"></i>
+          <span>Support</span>
+        </a>
+        <a href="user-profile.php" class="flex items-center px-4 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700 hover:text-white">
+          <i class="fas fa-user-circle w-5 h-5 mr-3"></i>
+          <span>My Profile</span>
+        </a>
+        <a href="user-settings.php" class="flex items-center px-4 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700 hover:text-white">
+          <i class="fas fa-cog w-5 h-5 mr-3"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-style flex-1 flex flex-col">
+      <!-- Top Navigation -->
+      <header class="bg-white shadow-sm">
+        <div class="flex justify-between items-center px-6 py-3">
+          <div class="flex items-center">
+            <button id="sidebarToggle" class="md:hidden mr-4 text-gray-500">
+              <i class="fas fa-bars w-6 h-6"></i>
+            </button>
+            <h2 class="text-lg font-medium text-gray-900">Customer Portal</h2>
           </div>
-          <nav class="mt-5 px-2 space-y-1">
-            <a href="index.php" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-primary-100 hover:bg-primary-600 hover:text-white">
-              <i class="fas fa-home mr-4 h-6 w-6"></i>
-              Dashboard
-            </a>
-            <a href="user-orders.php" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-primary-100 hover:bg-primary-600 hover:text-white">
-              <i class="fas fa-shopping-cart mr-4 h-6 w-6"></i>
-              My Orders
-            </a>
-            <a href="user-quotes.php" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-primary-100 hover:bg-primary-600 hover:text-white">
-              <i class="fas fa-file-invoice-dollar mr-4 h-6 w-6"></i>
-              Quotations
-            </a>
-            <a href="task-upload.php" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-primary-100 hover:bg-primary-600 hover:text-white">
-              <i class="fas fa-upload mr-4 h-6 w-6"></i>
-              Upload Task
-            </a>
-            <a href="view-all-tasks.php" class="group flex items-center px-2 py-2 text-base font-medium rounded-md bg-primary-800 text-white">
-              <i class="fas fa-tasks mr-4 h-6 w-6"></i>
-              My Tasks
-            </a>
-            <a href="user-products.php" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-primary-100 hover:bg-primary-600 hover:text-white">
-              <i class="fas fa-boxes mr-4 h-6 w-6"></i>
-              Products
-            </a>
-            <a href="user-invoices.php" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-primary-100 hover:bg-primary-600 hover:text-white">
-              <i class="fas fa-file-invoice mr-4 h-6 w-6"></i>
-              Invoices
-            </a>
-            <a href="user-support.php" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-primary-100 hover:bg-primary-600 hover:text-white">
-              <i class="fas fa-headset mr-4 h-6 w-6"></i>
-              Support
-            </a>
-            <a href="user-profile.php" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-primary-100 hover:bg-primary-600 hover:text-white">
-              <i class="fas fa-user-circle mr-4 h-6 w-6"></i>
-              My Profile
-            </a>
-            <a href="user-settings.php" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-primary-100 hover:bg-primary-600 hover:text-white">
-              <i class="fas fa-cog mr-4 h-6 w-6"></i>
-              Settings
-            </a>
-          </nav>
-        </div>
-        <div class="flex-shrink-0 flex border-t border-primary-800 p-4">
-          <a href="user-profile.php" class="flex-shrink-0 group block">
-            <div class="flex items-center">
-              <div>
-                <img class="inline-block h-10 w-10 rounded-full" src="https://via.placeholder.com/150" alt="">
-              </div>
-              <div class="ml-3">
-                <p class="text-base font-medium text-white"><?php echo htmlspecialchars($_SESSION["name"]); ?></p>
-                <p class="text-sm font-medium text-primary-200 group-hover:text-primary-100">Customer Account</p>
+
+          <div class="flex items-center space-x-4">
+            <div class="hidden sm:block text-sm text-gray-700">
+              <span id="current-date"></span>
+            </div>
+
+            <div class="relative">
+              <button id="userMenuBtn" class="flex items-center focus:outline-none">
+                <span class="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-500">
+                  <i class="fas fa-user"></i>
+                </span>
+              </button>
+
+              <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
+                <a href="user-profile.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Your Profile</a>
+                <a href="user-settings.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
+                <a href="../logout.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Logout</a>
               </div>
             </div>
+
+            <!-- Notification Bell -->
+            <div class="relative">
+              <button class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-bell"></i>
+                <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-1 ring-white"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <main class="flex-1 overflow-y-auto p-6">
+        <!-- Page Header -->
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">My Tasks</h1>
+            <p class="mt-1 text-sm text-gray-600">View and manage all your tasks</p>
+          </div>
+          <a href="task-upload.php" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            <i class="fas fa-plus mr-2"></i>
+            Upload New Task
           </a>
         </div>
-      </div>
-      <div class="flex-shrink-0 w-14"></div>
-    </div>
 
-    <!-- Main content -->
-    <div class="flex flex-col flex-1 overflow-hidden">
-      <!-- Top navbar -->
-      <nav class="bg-white border-b border-gray-200 flex-shrink-0">
-        <div class="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <div class="flex justify-between h-16">
-            <div class="flex">
-              <div class="flex items-center flex-shrink-0 md:hidden">
-                <button id="sidebarToggle" type="button" class="text-gray-500 hover:text-gray-900 focus:outline-none">
-                  <i class="fas fa-bars h-6 w-6"></i>
-                </button>
-              </div>
-              <div class="hidden md:ml-6 md:flex md:items-center md:space-x-4">
-                <div class="px-3 py-2 text-sm font-medium text-gray-900">
-                  BS Traders Customer Portal
-                </div>
-              </div>
-            </div>
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <span class="hidden sm:inline-flex ml-3 items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
-                  Date: <span id="current-date" class="ml-1"></span>
-                </span>
-              </div>
-              <div class="hidden md:ml-4 md:flex-shrink-0 md:flex md:items-center">
-                <button class="p-1 ml-3 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 relative">
-                  <i class="fas fa-bell h-6 w-6"></i>
-                  <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
-                </button>
-                <div class="ml-3 relative">
-                  <div>
-                    <button type="button" class="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500" id="user-menu-button">
-                      <span class="sr-only">Open user menu</span>
-                      <img class="h-8 w-8 rounded-full" src="https://via.placeholder.com/150" alt="">
-                    </button>
-                  </div>
-                  <div id="user-dropdown" class="hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu">
-                    <a href="user-profile.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">Your Profile</a>
-                    <a href="user-settings.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">Settings</a>
-                    <a href="../logout.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">Logout</a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <!-- Main content area -->
-      <main class="flex-1 overflow-y-auto p-4 bg-gray-50">
-        <div class="max-w-7xl mx-auto">
-          <!-- Page header -->
-          <div class="pb-5 border-b border-gray-200 sm:flex sm:items-center sm:justify-between">
-            <h3 class="text-lg leading-6 font-medium text-gray-900">My Tasks</h3>
-            <div class="mt-3 flex sm:mt-0 sm:ml-4">
-              <a href="task-upload.php" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                <i class="fas fa-plus mr-2 -ml-1 h-5 w-5"></i>
-                Upload New Task
-              </a>
-            </div>
+        <!-- Filter Card -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+          <div class="border-b border-gray-200 px-6 py-4">
+            <h2 class="text-lg font-medium text-gray-900">Filter & Search</h2>
           </div>
 
-          <!-- Filters and search -->
-          <div class="mt-6 bg-white shadow overflow-hidden sm:rounded-md">
-            <div class="px-4 py-5 sm:p-6">
-              <form action="view-all-tasks.php" method="GET" class="space-y-4 sm:space-y-0 sm:flex sm:items-center sm:space-x-4">
-                <div class="w-full sm:w-1/4">
-                  <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Filter by Status</label>
-                  <select id="status" name="status" class="block w-full sm:text-sm rounded-md py-2">
+          <div class="p-6">
+            <form action="view-all-tasks.php" method="GET" class="grid grid-cols-1 gap-6 md:grid-cols-4">
+              <!-- Status Filter -->
+              <div>
+                <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-filter text-gray-400"></i>
+                  </div>
+                  <select id="status" name="status"
+                    class="pl-10 w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                     <option value="all" <?php echo $status_filter == 'all' ? 'selected' : ''; ?>>All Tasks</option>
                     <option value="pending" <?php echo $status_filter == 'pending' ? 'selected' : ''; ?>>Pending</option>
                     <option value="in_progress" <?php echo $status_filter == 'in_progress' ? 'selected' : ''; ?>>In Progress</option>
@@ -412,9 +251,17 @@ $conn->close();
                     <option value="cancelled" <?php echo $status_filter == 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
                   </select>
                 </div>
-                <div class="w-full sm:w-1/4">
-                  <label for="sort" class="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
-                  <select id="sort" name="sort" class="block w-full sm:text-sm rounded-md py-2">
+              </div>
+
+              <!-- Sort By -->
+              <div>
+                <label for="sort" class="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-sort text-gray-400"></i>
+                  </div>
+                  <select id="sort" name="sort"
+                    class="pl-10 w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                     <option value="created_at" <?php echo $sort_by == 'created_at' ? 'selected' : ''; ?>>Date Created</option>
                     <option value="task_date" <?php echo $sort_by == 'task_date' ? 'selected' : ''; ?>>Task Date</option>
                     <option value="from_date" <?php echo $sort_by == 'from_date' ? 'selected' : ''; ?>>Start Date</option>
@@ -423,171 +270,180 @@ $conn->close();
                     <option value="priority" <?php echo $sort_by == 'priority' ? 'selected' : ''; ?>>Priority</option>
                   </select>
                 </div>
-                <div class="w-full sm:w-1/4">
-                  <label for="order" class="block text-sm font-medium text-gray-700 mb-1">Order</label>
-                  <select id="order" name="order" class="block w-full sm:text-sm rounded-md py-2">
+              </div>
+
+              <!-- Order -->
+              <div>
+                <label for="order" class="block text-sm font-medium text-gray-700 mb-1">Order</label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-arrow-down-a-z text-gray-400"></i>
+                  </div>
+                  <select id="order" name="order"
+                    class="pl-10 w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                     <option value="DESC" <?php echo $sort_order == 'DESC' ? 'selected' : ''; ?>>Descending</option>
                     <option value="ASC" <?php echo $sort_order == 'ASC' ? 'selected' : ''; ?>>Ascending</option>
                   </select>
                 </div>
-                <div class="w-full sm:w-1/4">
-                  <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
-                  <div class="relative rounded-md shadow-sm">
-                    <input type="text" name="search" id="search" value="<?php echo htmlspecialchars($search_term); ?>" class="block w-full sm:text-sm rounded-md py-2 pl-10" placeholder="Search tasks...">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <i class="fas fa-search text-gray-400"></i>
-                    </div>
+              </div>
+
+              <!-- Search -->
+              <div>
+                <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-search text-gray-400"></i>
                   </div>
+                  <input type="text" id="search" name="search" value="<?php echo htmlspecialchars($search_term); ?>"
+                    class="pl-10 w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Search tasks...">
                 </div>
-                <div class="sm:mt-6 flex items-center">
-                  <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                    Apply Filters
-                  </button>
-                  <a href="view-all-tasks.php" class="ml-3 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                    Reset
-                  </a>
-                </div>
-              </form>
-            </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="md:col-span-4 flex justify-end space-x-3">
+                <a href="view-all-tasks.php" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                  Reset
+                </a>
+                <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                  <i class="fas fa-filter mr-2"></i>
+                  Apply Filters
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Tasks List -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+          <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+            <h2 class="text-lg font-medium text-gray-900">Task List</h2>
+            <p class="text-sm text-gray-600">
+              Showing <?php echo min($total_tasks, 1) ?>-<?php echo min($total_tasks, $page * $tasks_per_page) ?> of <?php echo $total_tasks ?> tasks
+            </p>
           </div>
 
-          <!-- Tasks list -->
-          <div class="mt-6 bg-white shadow overflow-hidden sm:rounded-md">
-            <div class="bg-primary-50 px-4 py-3 border-b border-gray-200">
-              <h3 class="text-sm leading-6 font-medium text-primary-800">
-                Showing <?php echo min(count($tasks), 1) . '-' . min(count($tasks), $tasks_per_page); ?> of <?php echo $total_tasks; ?> tasks
-              </h3>
-            </div>
-            <ul class="divide-y divide-gray-200">
-              <?php if (count($tasks) > 0): ?>
-                <?php foreach ($tasks as $task): ?>
-                  <?php
-                  // Determine status color and icon
-                  $status_class = "";
-                  $icon_class = "bg-primary-100";
-                  $icon_text = "text-primary-600";
+          <?php if (count($tasks) > 0): ?>
+            <div class="divide-y divide-gray-200">
+              <?php foreach ($tasks as $task): ?>
+                <?php
+                // Determine status color and icon
+                $status_class = "";
+                $status_bg = "bg-blue-100 text-blue-800";
+                $icon_bg = "bg-blue-100";
+                $icon_text = "text-blue-600";
 
-                  switch ($task['status']) {
-                    case 'completed':
-                      $status_class = "bg-green-100 text-green-800";
-                      $icon_class = "bg-green-100";
-                      $icon_text = "text-green-600";
-                      break;
-                    case 'in_progress':
-                      $status_class = "bg-yellow-100 text-yellow-800";
-                      $icon_class = "bg-yellow-100";
-                      $icon_text = "text-yellow-600";
-                      break;
-                    case 'cancelled':
-                      $status_class = "bg-red-100 text-red-800";
-                      $icon_class = "bg-red-100";
-                      $icon_text = "text-red-600";
-                      break;
-                    default: // pending
-                      $status_class = "bg-blue-100 text-blue-800";
-                      break;
-                  }
+                switch ($task['status']) {
+                  case 'completed':
+                    $status_bg = "bg-green-100 text-green-800";
+                    $icon_bg = "bg-green-100";
+                    $icon_text = "text-green-600";
+                    break;
+                  case 'in_progress':
+                    $status_bg = "bg-yellow-100 text-yellow-800";
+                    $icon_bg = "bg-yellow-100";
+                    $icon_text = "text-yellow-600";
+                    break;
+                  case 'cancelled':
+                    $status_bg = "bg-red-100 text-red-800";
+                    $icon_bg = "bg-red-100";
+                    $icon_text = "text-red-600";
+                    break;
+                }
 
-                  // Format dates
-                  $created_date = date("F j, Y", strtotime($task['created_at']));
-                  $task_date = date("F j, Y", strtotime($task['task_date']));
-                  $from_date = date("M j, Y", strtotime($task['from_date']));
-                  $to_date = date("M j, Y", strtotime($task['to_date']));
+                // Format dates
+                $created_date = date("F j, Y", strtotime($task['created_at']));
+                $task_date = date("F j, Y", strtotime($task['task_date']));
+                $from_date = date("M j, Y", strtotime($task['from_date']));
+                $to_date = date("M j, Y", strtotime($task['to_date']));
 
-                  // Format amount
-                  $formatted_amount = number_format($task['amount'], 2);
+                // Format amount
+                $formatted_amount = number_format($task['amount'], 2);
 
-                  // Get priority badge class
-                  $priority_class = "bg-gray-100 text-gray-800";
-                  switch ($task['priority']) {
-                    case 'low':
-                      $priority_class = "bg-blue-100 text-blue-800";
-                      break;
-                    case 'medium':
-                      $priority_class = "bg-green-100 text-green-800";
-                      break;
-                    case 'high':
-                      $priority_class = "bg-yellow-100 text-yellow-800";
-                      break;
-                    case 'urgent':
-                      $priority_class = "bg-red-100 text-red-800";
-                      break;
-                  }
-                  ?>
-                  <li>
-                    <a href="task-details.php?id=<?php echo $task['id']; ?>" class="block hover:bg-gray-50">
-                      <div class="px-4 py-4 sm:px-6">
-                        <div class="flex items-center justify-between">
-                          <div class="flex items-center">
-                            <div class="flex-shrink-0 h-10 w-10 <?php echo $icon_class; ?> rounded-full flex items-center justify-center">
-                              <i class="fas fa-tasks <?php echo $icon_text; ?>"></i>
-                            </div>
-                            <div class="ml-4">
-                              <div class="flex items-center">
-                                <div class="text-sm font-medium text-primary-600"><?php echo htmlspecialchars($task['task_name']); ?></div>
-                                <?php if (!empty($task['attachment'])): ?>
-                                  <span class="ml-2 flex-shrink-0 inline-block px-2 py-0.5 text-xs font-medium rounded-full bg-primary-100 text-primary-800">
-                                    <i class="fas fa-paperclip mr-1"></i> Attachment
-                                  </span>
-                                <?php endif; ?>
-                              </div>
-                              <div class="text-sm text-gray-500">
-                                <span class="mr-2">Task Date: <?php echo $task_date; ?></span>
-                                <span class="mx-2">•</span>
-                                <span>Created: <?php echo $created_date; ?></span>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="flex items-center">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $status_class; ?>">
-                              <?php echo ucfirst(str_replace('_', ' ', $task['status'])); ?>
-                            </span>
-                            <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $priority_class; ?>">
-                              <?php echo ucfirst($task['priority']); ?>
-                            </span>
-                          </div>
+                // Get priority badge class
+                $priority_bg = "bg-gray-100 text-gray-800";
+                switch ($task['priority']) {
+                  case 'low':
+                    $priority_bg = "bg-blue-100 text-blue-800";
+                    break;
+                  case 'medium':
+                    $priority_bg = "bg-green-100 text-green-800";
+                    break;
+                  case 'high':
+                    $priority_bg = "bg-yellow-100 text-yellow-800";
+                    break;
+                  case 'urgent':
+                    $priority_bg = "bg-red-100 text-red-800";
+                    break;
+                }
+                ?>
+
+                <div class="hover:bg-gray-50 transition-colors">
+                  <a href="task-details.php?id=<?php echo $task['id']; ?>" class="block p-6">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center">
+                        <div class="h-12 w-12 flex-shrink-0 rounded-full <?php echo $icon_bg ?> flex items-center justify-center">
+                          <i class="fas fa-tasks <?php echo $icon_text ?>"></i>
                         </div>
-                        <div class="mt-2 sm:flex sm:justify-between">
-                          <div class="sm:flex">
-                            <div class="flex items-center text-sm text-gray-500">
-                              <i class="flex-shrink-0 mr-1.5 fas fa-map-marker-alt text-gray-400"></i>
-                              <?php echo htmlspecialchars($task['task_area']); ?>
-                            </div>
-                            <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
-                              <i class="flex-shrink-0 mr-1.5 fas fa-calendar text-gray-400"></i>
-                              <?php echo $from_date; ?> - <?php echo $to_date; ?>
-                            </div>
+                        <div class="ml-4">
+                          <div class="flex items-center">
+                            <h3 class="text-lg font-medium text-indigo-600"><?php echo htmlspecialchars($task['task_name']); ?></h3>
+                            <?php if (!empty($task['attachment'])): ?>
+                              <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                <i class="fas fa-paperclip mr-1"></i>
+                                Attachment
+                              </span>
+                            <?php endif; ?>
                           </div>
-                          <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                            <div class="mr-4">
-                              <?php echo $formatted_amount; ?>
-                            </div>
-                            <button class="text-primary-600 hover:text-primary-900 focus:outline-none" onclick="event.preventDefault(); window.location.href='task-details.php?id=<?php echo $task['id']; ?>'">
-                              <i class="fas fa-arrow-right"></i>
-                            </button>
+                          <div class="mt-1 flex items-center text-sm text-gray-500">
+                            <span><?php echo $task_date; ?></span>
+                            <span class="mx-2">•</span>
+                            <span>Created on <?php echo $created_date; ?></span>
                           </div>
                         </div>
                       </div>
-                    </a>
-                  </li>
-                <?php endforeach; ?>
-              <?php else: ?>
-                <li class="px-4 py-6 text-center text-gray-500">
-                  <p>No tasks found matching your criteria.</p>
-                  <p class="mt-2">
-                    <a href="task-upload.php" class="text-primary-600 hover:text-primary-900 font-medium">
-                      <i class="fas fa-plus mr-1"></i> Upload your first task
-                    </a>
-                  </p>
-                </li>
-              <?php endif; ?>
-            </ul>
+                      <div class="flex space-x-2">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <?php echo $status_bg; ?>">
+                          <?php echo ucfirst(str_replace('_', ' ', $task['status'])); ?>
+                        </span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <?php echo $priority_bg; ?>">
+                          <?php echo ucfirst($task['priority']); ?> Priority
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="mt-4 flex flex-wrap justify-between text-sm">
+                      <div class="flex flex-wrap mt-2 md:mt-0">
+                        <div class="flex items-center mr-4">
+                          <i class="fas fa-map-marker-alt text-gray-400 mr-1"></i>
+                          <span class="text-gray-600"><?php echo htmlspecialchars($task['task_area']); ?></span>
+                        </div>
+                        <div class="flex items-center">
+                          <i class="fas fa-calendar text-gray-400 mr-1"></i>
+                          <span class="text-gray-600"><?php echo $from_date; ?> - <?php echo $to_date; ?></span>
+                        </div>
+                      </div>
+                      <div class="flex items-center mt-2 md:mt-0">
+                        <div class="font-medium text-gray-900">$<?php echo $formatted_amount; ?></div>
+                        <i class="fas fa-chevron-right ml-3 text-indigo-500"></i>
+                      </div>
+                    </div>
+                  </a>
+                </div>
+              <?php endforeach; ?>
+            </div>
 
             <!-- Pagination -->
             <?php if ($total_pages > 1): ?>
-              <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+              <div class="px-6 py-4 border-t border-gray-200">
                 <div class="flex items-center justify-between">
-                  <div class="flex-1 flex justify-between sm:hidden">
+                  <div class="hidden sm:block">
+                    <p class="text-sm text-gray-700">
+                      Showing <span class="font-medium"><?php echo min($total_tasks, 1) ?></span> to <span class="font-medium"><?php echo min($total_tasks, $page * $tasks_per_page) ?></span> of <span class="font-medium"><?php echo $total_tasks ?></span> results
+                    </p>
+                  </div>
+
+                  <div class="flex-1 flex justify-between sm:justify-end">
                     <?php if ($has_previous): ?>
                       <a href="?page=<?php echo $page - 1; ?>&status=<?php echo $status_filter; ?>&sort=<?php echo $sort_by; ?>&order=<?php echo $sort_order; ?>&search=<?php echo urlencode($search_term); ?>" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                         Previous
@@ -608,73 +464,82 @@ $conn->close();
                       </span>
                     <?php endif; ?>
                   </div>
-                  <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                    <div>
-                      <p class="text-sm text-gray-700">
-                        Showing <span class="font-medium"><?php echo min(count($tasks), 1); ?></span> to <span class="font-medium"><?php echo min(count($tasks), $tasks_per_page); ?></span> of <span class="font-medium"><?php echo $total_tasks; ?></span> results
-                      </p>
-                    </div>
-                    <div>
-                      <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                        <?php if ($has_previous): ?>
-                          <a href="?page=<?php echo $page - 1; ?>&status=<?php echo $status_filter; ?>&sort=<?php echo $sort_by; ?>&order=<?php echo $sort_order; ?>&search=<?php echo urlencode($search_term); ?>" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                            <span class="sr-only">Previous</span>
-                            <i class="fas fa-chevron-left h-5 w-5"></i>
-                          </a>
-                        <?php else: ?>
-                          <span class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-gray-50 text-sm font-medium text-gray-300 cursor-not-allowed">
-                            <span class="sr-only">Previous</span>
-                            <i class="fas fa-chevron-left h-5 w-5"></i>
-                          </span>
-                        <?php endif; ?>
-
-                        <?php
-                        $start_page = max(1, $page - 2);
-                        $end_page = min($total_pages, $page + 2);
-
-                        if ($start_page > 1) {
-                          echo '<span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>';
-                        }
-
-                        for ($i = $start_page; $i <= $end_page; $i++) {
-                          if ($i == $page) {
-                            echo '<span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-primary-50 text-sm font-medium text-primary-600">' . $i . '</span>';
-                          } else {
-                            echo '<a href="?page=' . $i . '&status=' . $status_filter . '&sort=' . $sort_by . '&order=' . $sort_order . '&search=' . urlencode($search_term) . '" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">' . $i . '</a>';
-                          }
-                        }
-
-                        if ($end_page < $total_pages) {
-                          echo '<span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>';
-                        }
-                        ?>
-
-                        <?php if ($has_next): ?>
-                          <a href="?page=<?php echo $page + 1; ?>&status=<?php echo $status_filter; ?>&sort=<?php echo $sort_by; ?>&order=<?php echo $sort_order; ?>&search=<?php echo urlencode($search_term); ?>" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                            <span class="sr-only">Next</span>
-                            <i class="fas fa-chevron-right h-5 w-5"></i>
-                          </a>
-                        <?php else: ?>
-                          <span class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-gray-50 text-sm font-medium text-gray-300 cursor-not-allowed">
-                            <span class="sr-only">Next</span>
-                            <i class="fas fa-chevron-right h-5 w-5"></i>
-                          </span>
-                        <?php endif; ?>
-                      </nav>
-                    </div>
-                  </div>
                 </div>
               </div>
             <?php endif; ?>
-          </div>
+
+          <?php else: ?>
+            <div class="p-10 text-center">
+              <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 mb-4">
+                <i class="fas fa-tasks text-indigo-600 text-2xl"></i>
+              </div>
+              <h3 class="text-lg font-medium text-gray-900 mb-2">No tasks found</h3>
+              <p class="text-gray-500 mb-6">No tasks match your search criteria.</p>
+              <div class="flex justify-center">
+                <a href="task-upload.php" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                  <i class="fas fa-plus mr-2"></i>
+                  Upload a Task
+                </a>
+                <a href="view-all-tasks.php" class="ml-3 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                  Reset Filters
+                </a>
+              </div>
+            </div>
+          <?php endif; ?>
         </div>
       </main>
     </div>
   </div>
 
-  <!-- JavaScript for interactivity -->
+  <!-- Mobile sidebar (hidden by default) -->
+  <div id="mobileSidebar" class="fixed inset-0 z-40 hidden">
+    <div class="fixed inset-0 bg-gray-600 bg-opacity-75"></div>
+    <div class="relative flex-1 flex flex-col max-w-xs w-full bg-indigo-800">
+      <div class="absolute top-0 right-0 -mr-12 pt-2">
+        <button id="closeSidebar" class="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-white">
+          <i class="fas fa-times text-white"></i>
+        </button>
+      </div>
+      <div class="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
+        <div class="flex items-center justify-center h-16">
+          <h1 class="text-2xl font-bold text-white">BS Traders</h1>
+        </div>
+        <nav class="mt-6 px-4 space-y-1">
+          <a href="index.php" class="flex items-center px-4 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700 hover:text-white">
+            <i class="fas fa-home w-5 h-5 mr-3"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="user-orders.php" class="flex items-center px-4 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700 hover:text-white">
+            <i class="fas fa-shopping-cart w-5 h-5 mr-3"></i>
+            <span>My Orders</span>
+          </a>
+          <a href="task-upload.php" class="flex items-center px-4 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700 hover:text-white">
+            <i class="fas fa-upload w-5 h-5 mr-3"></i>
+            <span>Upload Task</span>
+          </a>
+          <a href="view-all-tasks.php" class="flex items-center px-4 py-2 bg-indigo-700 text-white rounded-lg">
+            <i class="fas fa-tasks w-5 h-5 mr-3"></i>
+            <span>My Tasks</span>
+          </a>
+          <!-- Add other mobile menu items here -->
+        </nav>
+      </div>
+      <div class="flex-shrink-0 flex border-t border-indigo-700 p-4">
+        <div class="flex items-center">
+          <div class="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center text-lg font-bold">
+            <?php echo substr($_SESSION["name"], 0, 1); ?>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-white"><?php echo htmlspecialchars($_SESSION["name"]); ?></p>
+            <p class="text-xs text-indigo-300">Customer Account</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // Date display
+    // Current date display
     const currentDate = new Date();
     const options = {
       weekday: 'long',
@@ -685,32 +550,36 @@ $conn->close();
     document.getElementById('current-date').textContent = currentDate.toLocaleDateString('en-US', options);
 
     // User dropdown toggle
-    const userMenuButton = document.getElementById('user-menu-button');
-    const userDropdown = document.getElementById('user-dropdown');
+    const userMenuBtn = document.getElementById('userMenuBtn');
+    const userDropdown = document.getElementById('userDropdown');
 
-    userMenuButton.addEventListener('click', () => {
+    userMenuBtn.addEventListener('click', () => {
       userDropdown.classList.toggle('hidden');
     });
 
     // Close dropdown when clicking outside
     document.addEventListener('click', (event) => {
-      if (!userMenuButton.contains(event.target) && !userDropdown.contains(event.target)) {
+      if (!userMenuBtn.contains(event.target) && !userDropdown.contains(event.target)) {
         userDropdown.classList.add('hidden');
       }
     });
 
-    // Mobile sidebar toggle
+    // Mobile sidebar
     const sidebarToggle = document.getElementById('sidebarToggle');
-    const mobileSidebar = document.getElementById('mobile-sidebar');
+    const mobileSidebar = document.getElementById('mobileSidebar');
     const closeSidebar = document.getElementById('closeSidebar');
 
-    sidebarToggle.addEventListener('click', () => {
-      mobileSidebar.classList.remove('hidden');
-    });
+    if (sidebarToggle) {
+      sidebarToggle.addEventListener('click', () => {
+        mobileSidebar.classList.remove('hidden');
+      });
+    }
 
-    closeSidebar.addEventListener('click', () => {
-      mobileSidebar.classList.add('hidden');
-    });
+    if (closeSidebar) {
+      closeSidebar.addEventListener('click', () => {
+        mobileSidebar.classList.add('hidden');
+      });
+    }
   </script>
 </body>
 

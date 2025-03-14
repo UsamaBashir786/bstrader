@@ -213,278 +213,286 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <html lang="en">
 
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BS Traders - Create Account</title>
   <?php include 'includes/css-links.php' ?>
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: {
-              50: '#e6f1ff',
-              100: '#cce3ff',
-              200: '#99c7ff',
-              300: '#66aaff',
-              400: '#338eff',
-              500: '#0072ff',
-              600: '#005bcc',
-              700: '#004499',
-              800: '#002e66',
-              900: '#001733',
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 </head>
 
-<body class="bg-gray-50 min-h-screen flex flex-col">
+<body class="bg-gray-100 min-h-screen">
   <?php include 'includes/navbar.php' ?>
 
-  <!-- Main Content -->
-  <main class="flex-grow py-10 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-4xl mx-auto">
-      <div class="bg-white shadow-xl rounded-lg overflow-hidden">
-        <!-- Form Header -->
-        <div class="bg-primary-600 px-6 py-4">
-          <h2 class="text-2xl font-bold text-white">Create Your Account</h2>
-          <p class="text-primary-100 mt-1">Join BS Traders as a valued customer</p>
-        </div>
+  <div class="container mx-auto px-4 py-12">
+    <!-- Header -->
+    <div class="text-center mb-10">
+      <h1 class="text-3xl font-bold text-indigo-800">BS Traders</h1>
+      <p class="text-gray-600 mt-2">Create your trading account in minutes</p>
+    </div>
 
-        <!-- Progress Indicator -->
-        <div class="bg-gray-100 px-6 py-4 border-b border-gray-200">
-          <div class="flex justify-between items-center">
-            <div class="flex items-center">
-              <span class="h-8 w-8 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold">1</span>
-              <span class="ml-2 font-medium text-gray-900">Personal Information</span>
-            </div>
-            <div class="h-0.5 w-12 bg-gray-300"></div>
-            <div class="flex items-center">
-              <span class="h-8 w-8 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold">2</span>
-              <span class="ml-2 font-medium text-gray-900">Contract Details</span>
-            </div>
-            <div class="h-0.5 w-12 bg-gray-300"></div>
-            <div class="flex items-center">
-              <span class="h-8 w-8 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold">3</span>
-              <span class="ml-2 font-medium text-gray-900">Account Setup</span>
+    <!-- Main Card -->
+    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+      <!-- Header Banner -->
+      <div class="bg-indigo-600 py-6 px-8">
+        <h2 class="text-2xl font-bold text-white">Join Our Trading Community</h2>
+        <p class="text-indigo-100 mt-1">Complete the form below to get started</p>
+      </div>
+
+      <!-- Step Indicator -->
+      <div class="flex justify-between items-center px-8 py-4 bg-gray-50 border-b border-gray-200">
+        <div class="flex items-center">
+          <div class="bg-indigo-600 text-white rounded-full h-8 w-8 flex items-center justify-center font-semibold">1</div>
+          <span class="ml-2 font-medium text-indigo-800">Personal Details</span>
+        </div>
+        <div class="hidden md:block h-0.5 w-16 bg-gray-300"></div>
+        <div class="flex items-center">
+          <div class="bg-indigo-600 text-white rounded-full h-8 w-8 flex items-center justify-center font-semibold">2</div>
+          <span class="ml-2 font-medium text-indigo-800">Contract</span>
+        </div>
+        <div class="hidden md:block h-0.5 w-16 bg-gray-300"></div>
+        <div class="flex items-center">
+          <div class="bg-indigo-600 text-white rounded-full h-8 w-8 flex items-center justify-center font-semibold">3</div>
+          <span class="ml-2 font-medium text-indigo-800">Security</span>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="POST" enctype="multipart/form-data" class="p-8">
+        <!-- Personal Information Section -->
+        <div class="mb-10">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <span class="h-6 w-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-bold mr-2">1</span>
+            Personal Information
+          </h3>
+
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Name Field -->
+              <div>
+                <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Full Name <span class="text-red-500">*</span></label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                    <i class="fas fa-user"></i>
+                  </span>
+                  <input type="text" id="name" name="name" placeholder="John Doe" value="<?php echo $name; ?>"
+                    class="pl-10 w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 <?php echo (!empty($name_err)) ? 'border-red-500' : ''; ?>">
+                </div>
+                <?php if (!empty($name_err)): ?>
+                  <p class="mt-1 text-sm text-red-600"><?php echo $name_err; ?></p>
+                <?php endif; ?>
+              </div>
+
+              <!-- Email Field -->
+              <div>
+                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address <span class="text-red-500">*</span></label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                    <i class="fas fa-envelope"></i>
+                  </span>
+                  <input type="email" id="email" name="email" placeholder="you@example.com" value="<?php echo $email; ?>"
+                    class="pl-10 w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 <?php echo (!empty($email_err)) ? 'border-red-500' : ''; ?>">
+                </div>
+                <?php if (!empty($email_err)): ?>
+                  <p class="mt-1 text-sm text-red-600"><?php echo $email_err; ?></p>
+                <?php endif; ?>
+              </div>
+
+              <!-- Phone Field -->
+              <div>
+                <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Phone Number <span class="text-red-500">*</span></label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                    <i class="fas fa-phone"></i>
+                  </span>
+                  <input type="text" id="phone" name="phone" placeholder="+92 300 1234567" value="<?php echo $phone; ?>"
+                    class="pl-10 w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 <?php echo (!empty($phone_err)) ? 'border-red-500' : ''; ?>">
+                </div>
+                <?php if (!empty($phone_err)): ?>
+                  <p class="mt-1 text-sm text-red-600"><?php echo $phone_err; ?></p>
+                <?php endif; ?>
+              </div>
+
+              <!-- CNIC Field -->
+              <div>
+                <label for="cnic" class="block text-sm font-medium text-gray-700 mb-1">CNIC Number <span class="text-red-500">*</span></label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                    <i class="fas fa-id-card"></i>
+                  </span>
+                  <input type="text" id="cnic" name="cnic" placeholder="12345-1234567-1" value="<?php echo $cnic; ?>"
+                    class="pl-10 w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 <?php echo (!empty($cnic_err)) ? 'border-red-500' : ''; ?>">
+                </div>
+                <?php if (!empty($cnic_err)): ?>
+                  <p class="mt-1 text-sm text-red-600"><?php echo $cnic_err; ?></p>
+                <?php endif; ?>
+              </div>
+
+              <!-- Address Field - Full Width -->
+              <div class="md:col-span-2">
+                <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Address <span class="text-red-500">*</span></label>
+                <div class="relative">
+                  <span class="absolute top-3 left-3 text-gray-400">
+                    <i class="fas fa-home"></i>
+                  </span>
+                  <textarea id="address" name="address" rows="3" placeholder="Your complete address"
+                    class="pl-10 w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 <?php echo (!empty($address_err)) ? 'border-red-500' : ''; ?>"><?php echo $address; ?></textarea>
+                </div>
+                <?php if (!empty($address_err)): ?>
+                  <p class="mt-1 text-sm text-red-600"><?php echo $address_err; ?></p>
+                <?php endif; ?>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Form Content -->
-        <div class="p-6">
-          <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="POST" enctype="multipart/form-data">
-            <!-- Personal Information Section -->
-            <div class="mb-8">
-              <h3 class="text-lg font-medium text-primary-700 mb-4 flex items-center">
-                <span class="h-6 w-6 rounded-full bg-primary-600 text-white flex items-center justify-center text-sm font-bold mr-2">1</span>
-                Personal Information
-              </h3>
-              <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  <div>
-                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Full Name <span class="text-red-500">*</span></label>
-                    <div class="relative rounded-md shadow-sm">
-                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-user text-gray-400"></i>
-                      </div>
-                      <input type="text" name="name" id="name" class="focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 pr-3 py-2 sm:text-sm border border-gray-400 shadow-sm rounded-md" placeholder="John Doe" value="<?php echo $name; ?>">
-                    </div>
-                    <?php if (!empty($name_err)): ?>
-                      <p class="mt-1 text-sm text-red-600"><?php echo $name_err; ?></p>
-                    <?php endif; ?>
-                  </div>
+        <!-- Contract Information Section -->
+        <div class="mb-10">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <span class="h-6 w-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-bold mr-2">2</span>
+            Contract Information
+          </h3>
 
-                  <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address <span class="text-red-500">*</span></label>
-                    <div class="relative rounded-md shadow-sm">
-                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-envelope text-gray-400"></i>
-                      </div>
-                      <input type="email" name="email" id="email" class="focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 pr-3 py-2 sm:text-sm border border-gray-400 shadow-sm rounded-md" placeholder="you@example.com" value="<?php echo $email; ?>">
-                    </div>
-                    <?php if (!empty($email_err)): ?>
-                      <p class="mt-1 text-sm text-red-600"><?php echo $email_err; ?></p>
-                    <?php endif; ?>
-                  </div>
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Start Date Field -->
+              <div>
+                <label for="contract_start" class="block text-sm font-medium text-gray-700 mb-1">Contract Start Date <span class="text-red-500">*</span></label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                    <i class="fas fa-calendar-alt"></i>
+                  </span>
+                  <input type="date" id="contract_start" name="contract_start" value="<?php echo $contract_start; ?>"
+                    class="pl-10 w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 <?php echo (!empty($contract_start_err)) ? 'border-red-500' : ''; ?>">
+                </div>
+                <?php if (!empty($contract_start_err)): ?>
+                  <p class="mt-1 text-sm text-red-600"><?php echo $contract_start_err; ?></p>
+                <?php endif; ?>
+              </div>
 
-                  <div>
-                    <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Phone Number <span class="text-red-500">*</span></label>
-                    <div class="relative rounded-md shadow-sm">
-                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-phone text-gray-400"></i>
-                      </div>
-                      <input type="text" name="phone" id="phone" class="focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 pr-3 py-2 sm:text-sm border border-gray-400 shadow-sm rounded-md" placeholder="+92 300 1234567" value="<?php echo $phone; ?>">
-                    </div>
-                    <?php if (!empty($phone_err)): ?>
-                      <p class="mt-1 text-sm text-red-600"><?php echo $phone_err; ?></p>
-                    <?php endif; ?>
-                  </div>
+              <!-- End Date Field -->
+              <div>
+                <label for="contract_end" class="block text-sm font-medium text-gray-700 mb-1">Contract End Date <span class="text-red-500">*</span></label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                    <i class="fas fa-calendar-alt"></i>
+                  </span>
+                  <input type="date" id="contract_end" name="contract_end" value="<?php echo $contract_end; ?>"
+                    class="pl-10 w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 <?php echo (!empty($contract_end_err)) ? 'border-red-500' : ''; ?>">
+                </div>
+                <?php if (!empty($contract_end_err)): ?>
+                  <p class="mt-1 text-sm text-red-600"><?php echo $contract_end_err; ?></p>
+                <?php endif; ?>
+              </div>
 
-                  <div>
-                    <label for="cnic" class="block text-sm font-medium text-gray-700 mb-1">CNIC Number <span class="text-red-500">*</span></label>
-                    <div class="relative rounded-md shadow-sm">
-                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-id-card text-gray-400"></i>
-                      </div>
-                      <input type="text" name="cnic" id="cnic" class="focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 pr-3 py-2 sm:text-sm border border-gray-400 shadow-sm rounded-md" placeholder="12345-1234567-1" value="<?php echo $cnic; ?>">
-                    </div>
-                    <?php if (!empty($cnic_err)): ?>
-                      <p class="mt-1 text-sm text-red-600"><?php echo $cnic_err; ?></p>
-                    <?php endif; ?>
+              <!-- Profile Picture Field -->
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Profile Picture</label>
+                <div class="flex flex-col md:flex-row md:items-center">
+                  <div class="h-20 w-20 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-300">
+                    <i class="fas fa-user text-gray-400 text-3xl"></i>
                   </div>
-
-                  <div class="md:col-span-2">
-                    <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Address <span class="text-red-500">*</span></label>
-                    <div class="relative rounded-md shadow-sm">
-                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-home text-gray-400"></i>
-                      </div>
-                      <textarea name="address" id="address" rows="3" class="focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 pr-3 py-2 sm:text-sm border border-gray-400 shadow-sm rounded-md" placeholder="Your complete address"><?php echo $address; ?></textarea>
-                    </div>
-                    <?php if (!empty($address_err)): ?>
-                      <p class="mt-1 text-sm text-red-600"><?php echo $address_err; ?></p>
+                  <div class="mt-4 md:mt-0 md:ml-5">
+                    <label for="profile_pic" class="cursor-pointer inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                      <i class="fas fa-upload mr-2 text-gray-500"></i>
+                      Upload Photo
+                      <input id="profile_pic" name="profile_pic" type="file" class="sr-only" accept="image/jpeg,image/png,image/jpg">
+                    </label>
+                    <p class="mt-1 text-xs text-gray-500">JPG, PNG, or JPEG. Max 5MB.</p>
+                    <p class="mt-1 text-xs text-gray-500" id="selected-file">No file selected</p>
+                    <?php if (!empty($pic_err)): ?>
+                      <p class="mt-1 text-sm text-red-600"><?php echo $pic_err; ?></p>
                     <?php endif; ?>
                   </div>
                 </div>
               </div>
             </div>
-
-            <!-- Contract Information Section -->
-            <div class="mb-8">
-              <h3 class="text-lg font-medium text-primary-700 mb-4 flex items-center">
-                <span class="h-6 w-6 rounded-full bg-primary-600 text-white flex items-center justify-center text-sm font-bold mr-2">2</span>
-                Contract Information
-              </h3>
-              <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  <div>
-                    <label for="contract_start" class="block text-sm font-medium text-gray-700 mb-1">Contract Start Date <span class="text-red-500">*</span></label>
-                    <div class="relative rounded-md shadow-sm">
-                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-calendar-alt text-gray-400"></i>
-                      </div>
-                      <input type="date" name="contract_start" id="contract_start" class="focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 pr-3 py-2 sm:text-sm border border-gray-400 shadow-sm rounded-md" value="<?php echo $contract_start; ?>">
-                    </div>
-                    <?php if (!empty($contract_start_err)): ?>
-                      <p class="mt-1 text-sm text-red-600"><?php echo $contract_start_err; ?></p>
-                    <?php endif; ?>
-                  </div>
-
-                  <div>
-                    <label for="contract_end" class="block text-sm font-medium text-gray-700 mb-1">Contract End Date <span class="text-red-500">*</span></label>
-                    <div class="relative rounded-md shadow-sm">
-                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-calendar-alt text-gray-400"></i>
-                      </div>
-                      <input type="date" name="contract_end" id="contract_end" class="focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 pr-3 py-2 sm:text-sm border border-gray-400 shadow-sm rounded-md" value="<?php echo $contract_end; ?>">
-                    </div>
-                    <?php if (!empty($contract_end_err)): ?>
-                      <p class="mt-1 text-sm text-red-600"><?php echo $contract_end_err; ?></p>
-                    <?php endif; ?>
-                  </div>
-
-                  <div class="md:col-span-2">
-                    <label for="profile_pic" class="block text-sm font-medium text-gray-700 mb-1">Profile Picture</label>
-                    <div class="mt-1 flex items-center">
-                      <div class="h-24 w-24 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-400 shadow-sm">
-                        <i class="fas fa-user text-gray-300 text-4xl"></i>
-                      </div>
-                      <div class="ml-5 flex-1">
-                        <label for="profile_pic" class="relative cursor-pointer bg-white py-2 px-4 border border-gray-400 shadow-sm rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                          <span>Upload a file</span>
-                          <input id="profile_pic" name="profile_pic" type="file" class="sr-only" accept="image/jpeg,image/png,image/jpg">
-                        </label>
-                        <p class="mt-2 text-xs text-gray-500">JPG, PNG, or JPEG. Max 5MB.</p>
-                        <p class="mt-1 text-xs text-gray-500" id="selected-file">No file selected</p>
-                        <?php if (!empty($pic_err)): ?>
-                          <p class="mt-1 text-sm text-red-600"><?php echo $pic_err; ?></p>
-                        <?php endif; ?>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Account Information Section -->
-            <div class="mb-8">
-              <h3 class="text-lg font-medium text-primary-700 mb-4 flex items-center">
-                <span class="h-6 w-6 rounded-full bg-primary-600 text-white flex items-center justify-center text-sm font-bold mr-2">3</span>
-                Account Security
-              </h3>
-              <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password <span class="text-red-500">*</span></label>
-                    <div class="relative rounded-md shadow-sm">
-                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-lock text-gray-400"></i>
-                      </div>
-                      <input type="password" name="password" id="password" class="focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 pr-3 py-2 sm:text-sm border border-gray-400 shadow-sm rounded-md" placeholder="••••••••">
-                    </div>
-                    <?php if (!empty($password_err)): ?>
-                      <p class="mt-1 text-sm text-red-600"><?php echo $password_err; ?></p>
-                    <?php else: ?>
-                      <p class="mt-1 text-xs text-gray-500">Must be at least 6 characters long.</p>
-                    <?php endif; ?>
-                  </div>
-
-                  <div>
-                    <label for="confirm_password" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password <span class="text-red-500">*</span></label>
-                    <div class="relative rounded-md shadow-sm">
-                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-lock text-gray-400"></i>
-                      </div>
-                      <input type="password" name="confirm_password" id="confirm_password" class="focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 pr-3 py-2 sm:text-sm border border-gray-400 shadow-sm rounded-md" placeholder="••••••••">
-                    </div>
-                    <?php if (!empty($confirm_password_err)): ?>
-                      <p class="mt-1 text-sm text-red-600"><?php echo $confirm_password_err; ?></p>
-                    <?php endif; ?>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Terms Agreement -->
-            <div class="mb-8">
-              <div class="bg-gray-50 rounded-lg p-4 border border-gray-400 shadow-sm">
-                <div class="flex items-start">
-                  <div class="flex items-center h-5">
-                    <input id="terms" name="terms" type="checkbox" class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-400 rounded" required>
-                  </div>
-                  <div class="ml-3 text-sm">
-                    <label for="terms" class="font-medium text-gray-700">I agree to the Terms and Conditions</label>
-                    <p class="text-gray-500">By creating an account, you agree to our <a href="#" class="text-primary-600 hover:text-primary-500 font-medium">Terms of Service</a> and <a href="#" class="text-primary-600 hover:text-primary-500 font-medium">Privacy Policy</a>.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Submit Button -->
-            <div class="flex justify-end">
-              <button type="submit" class="inline-flex justify-center py-3 px-6 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                <i class="fas fa-user-plus mr-2"></i> Create Account
-              </button>
-            </div>
-          </form>
+          </div>
         </div>
-      </div>
 
-      <!-- Login Link -->
-      <div class="text-center mt-8">
-        <p class="text-base text-gray-600">
-          Already have an account? <a href="login.php" class="font-medium text-primary-600 hover:text-primary-500">Sign in</a>
-        </p>
-      </div>
+        <!-- Account Security Section -->
+        <div class="mb-10">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <span class="h-6 w-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-bold mr-2">3</span>
+            Account Security
+          </h3>
+
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Password Field -->
+              <div>
+                <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password <span class="text-red-500">*</span></label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                    <i class="fas fa-lock"></i>
+                  </span>
+                  <input type="password" id="password" name="password" placeholder="••••••••"
+                    class="pl-10 w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 <?php echo (!empty($password_err)) ? 'border-red-500' : ''; ?>">
+                </div>
+                <?php if (!empty($password_err)): ?>
+                  <p class="mt-1 text-sm text-red-600"><?php echo $password_err; ?></p>
+                <?php else: ?>
+                  <p class="mt-1 text-xs text-gray-500">Must be at least 6 characters long</p>
+                <?php endif; ?>
+              </div>
+
+              <!-- Confirm Password Field -->
+              <div>
+                <label for="confirm_password" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password <span class="text-red-500">*</span></label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                    <i class="fas fa-lock"></i>
+                  </span>
+                  <input type="password" id="confirm_password" name="confirm_password" placeholder="••••••••"
+                    class="pl-10 w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 <?php echo (!empty($confirm_password_err)) ? 'border-red-500' : ''; ?>">
+                </div>
+                <?php if (!empty($confirm_password_err)): ?>
+                  <p class="mt-1 text-sm text-red-600"><?php echo $confirm_password_err; ?></p>
+                <?php endif; ?>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Terms and Conditions -->
+        <div class="mb-8">
+          <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div class="flex items-start">
+              <div class="flex items-center h-5">
+                <input id="terms" name="terms" type="checkbox" required
+                  class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+              </div>
+              <div class="ml-3">
+                <label for="terms" class="text-sm font-medium text-gray-700">I agree to the Terms and Conditions</label>
+                <p class="text-xs text-gray-500 mt-1">By creating an account, you agree to our <a href="#" class="text-indigo-600 hover:text-indigo-500">Terms of Service</a> and <a href="#" class="text-indigo-600 hover:text-indigo-500">Privacy Policy</a>.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer Buttons -->
+        <div class="flex justify-between items-center">
+          <a href="login.php" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Back to Login
+          </a>
+          <button type="submit" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            <i class="fas fa-user-plus mr-2"></i>
+            Create Account
+          </button>
+        </div>
+      </form>
     </div>
-  </main>
 
-  <!-- Footer -->
+    <!-- Login Link -->
+    <div class="text-center mt-8">
+      <p class="text-sm text-gray-600">
+        Already have an account? <a href="login.php" class="font-medium text-indigo-600 hover:text-indigo-500">Sign in</a>
+      </p>
+    </div>
+  </div>
+
   <?php include 'includes/footer.php' ?>
 
-  <!-- JavaScript -->
   <script>
     // File input preview
     const fileInput = document.getElementById('profile_pic');
@@ -497,45 +505,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         fileNameDisplay.textContent = 'No file selected';
       }
     });
-    // Add this to your existing JavaScript section at the bottom of your page
+
+    // CNIC formatting
     document.addEventListener('DOMContentLoaded', function() {
-      // Get the CNIC input field
       const cnicInput = document.getElementById('cnic');
 
-      // Add event listener for input
       cnicInput.addEventListener('input', function(e) {
-        // Get the current value without any dashes
         let value = e.target.value.replace(/-/g, '');
-
-        // Only allow numbers
         value = value.replace(/[^\d]/g, '');
-
-        // Limit to 13 digits (Pakistan CNIC format)
         value = value.substring(0, 13);
 
-        // Format with dashes
         let formattedValue = '';
-
         for (let i = 0; i < value.length; i++) {
-          // Add dash after 5th digit
           if (i === 5) {
             formattedValue += '-';
-          }
-          // Add dash after 12th digit (5 + 7)
-          else if (i === 12) {
+          } else if (i === 12) {
             formattedValue += '-';
           }
-
           formattedValue += value[i];
         }
 
-        // Set the formatted value back to the input
         e.target.value = formattedValue;
       });
 
-      // Add an event listener for paste to ensure proper formatting for pasted content
       cnicInput.addEventListener('paste', function(e) {
-        // Small delay to allow paste to complete before formatting
         setTimeout(function() {
           const pastedValue = cnicInput.value.replace(/-/g, '').replace(/[^\d]/g, '').substring(0, 13);
           let formattedValue = '';
