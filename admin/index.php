@@ -438,7 +438,7 @@ require_once "../config/admin-auth.php";
   <div id="mobile-sidebar" class="fixed inset-0 z-40 hidden">
     <div class="fixed inset-0 bg-gray-600 bg-opacity-75"></div>
     <div class="relative flex-1 flex flex-col max-w-xs w-full bg-primary-700">
-      <div class="absolute top-0 right-0 -mr-12 pt-2">
+      <div class="absolute top-0 right-0  pt-2">
         <button id="closeSidebar" class="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
           <span class="sr-only">Close sidebar</span>
           <i class="fas fa-times text-white"></i>

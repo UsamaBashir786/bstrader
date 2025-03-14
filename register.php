@@ -482,7 +482,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   </main>
 
   <!-- Footer -->
-   <?php include 'includes/footer.php' ?>
+  <?php include 'includes/footer.php' ?>
 
   <!-- JavaScript -->
   <script>
@@ -496,6 +496,60 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       } else {
         fileNameDisplay.textContent = 'No file selected';
       }
+    });
+    // Add this to your existing JavaScript section at the bottom of your page
+    document.addEventListener('DOMContentLoaded', function() {
+      // Get the CNIC input field
+      const cnicInput = document.getElementById('cnic');
+
+      // Add event listener for input
+      cnicInput.addEventListener('input', function(e) {
+        // Get the current value without any dashes
+        let value = e.target.value.replace(/-/g, '');
+
+        // Only allow numbers
+        value = value.replace(/[^\d]/g, '');
+
+        // Limit to 13 digits (Pakistan CNIC format)
+        value = value.substring(0, 13);
+
+        // Format with dashes
+        let formattedValue = '';
+
+        for (let i = 0; i < value.length; i++) {
+          // Add dash after 5th digit
+          if (i === 5) {
+            formattedValue += '-';
+          }
+          // Add dash after 12th digit (5 + 7)
+          else if (i === 12) {
+            formattedValue += '-';
+          }
+
+          formattedValue += value[i];
+        }
+
+        // Set the formatted value back to the input
+        e.target.value = formattedValue;
+      });
+
+      // Add an event listener for paste to ensure proper formatting for pasted content
+      cnicInput.addEventListener('paste', function(e) {
+        // Small delay to allow paste to complete before formatting
+        setTimeout(function() {
+          const pastedValue = cnicInput.value.replace(/-/g, '').replace(/[^\d]/g, '').substring(0, 13);
+          let formattedValue = '';
+
+          for (let i = 0; i < pastedValue.length; i++) {
+            if (i === 5 || i === 12) {
+              formattedValue += '-';
+            }
+            formattedValue += pastedValue[i];
+          }
+
+          cnicInput.value = formattedValue;
+        }, 10);
+      });
     });
   </script>
 </body>

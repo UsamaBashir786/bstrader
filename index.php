@@ -35,7 +35,6 @@
 <body class="bg-gray-50">
   <!-- header -->
   <?php include 'includes/navbar.php' ?>
-  <br><br>
   <!-- Hero Section -->
   <section class="bg-gradient-to-r from-blue-600 to-blue-900 text-white py-20">
     <div class="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col md:flex-row items-center gap-12">
