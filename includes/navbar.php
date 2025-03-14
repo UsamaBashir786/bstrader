@@ -75,11 +75,11 @@
         </div>
         <!-- Desktop Navigation -->
         <nav class="hidden md:ml-10 md:flex md:space-x-4 lg:space-x-8">
-          <a href="#" class="text-primary-900 font-medium hover:text-primary-600 px-3 py-2 rounded-md">Home</a>
-          <a href="#products" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md">Products</a>
-          <a href="#services" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md">Services</a>
-          <a href="#about" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md">About Us</a>
-          <a href="#contact" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md">Contact</a>
+          <a href="index.php" class="text-primary-900 font-medium hover:text-primary-600 px-3 py-2 rounded-md">Home</a>
+          <a href="index.php#products" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md">Products</a>
+          <a href="index.php#services" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md">Services</a>
+          <a href="index.php#about" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md">About Us</a>
+          <a href="index.php#contact" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md">Contact</a>
         </nav>
       </div>
 
