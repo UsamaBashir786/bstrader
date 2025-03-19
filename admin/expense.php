@@ -1,202 +1,672 @@
 <?php
-// Database connection
-$conn = new mysqli('localhost', 'root', '', 'bs_trader');
 
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+/**
+ * BS Traders - Expense Management System
+ * Complete implementation with Model-View-Controller pattern
+ */
 
-// Create table if not exists
-$create_table_sql = "CREATE TABLE IF NOT EXISTS expenses (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    category VARCHAR(255) NOT NULL,
-    amount DECIMAL(10, 2) NOT NULL,
-    date DATE NOT NULL,
-    paid_by VARCHAR(255) NOT NULL,
-    status VARCHAR(50) NOT NULL,
-    payment_method VARCHAR(50) NOT NULL,
-    notes TEXT,
-    receipt_path VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)";
+/**
+ * Expense Model
+ * 
+ * This class manages all database operations for expenses
+ */
+class ExpenseModel
+{
+  private $conn;
 
-if ($conn->query($create_table_sql) === FALSE) {
-    echo "Error creating table: " . $conn->error;
-}
+  /**
+   * Constructor - establishes database connection
+   */
+  public function __construct()
+  {
+    $this->conn = new mysqli('localhost', 'root', '', 'bs_trader');
 
-// Handle Add Expense form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['expense-title'])) {
-    $title = $_POST['expense-title'];
-    $category = $_POST['category'];
-    $amount = $_POST['amount'];
-    $date = $_POST['expense-date'];
-    $paid_by = $_POST['paid-by'];
-    $status = $_POST['status'];
-    $payment_method = $_POST['payment-method'];
-    $notes = $_POST['notes'];
-    $receipt_path = '';
-    
-    // Handle file upload if a file was submitted
-    if(isset($_FILES['file-upload']) && $_FILES['file-upload']['error'] == 0) {
-        $upload_dir = 'uploads/receipts/';
-        
-        // Create directory if it doesn't exist
-        if (!file_exists($upload_dir)) {
-            mkdir($upload_dir, 0777, true);
-        }
-        
-        $file_name = time() . '_' . basename($_FILES['file-upload']['name']);
-        $target_path = $upload_dir . $file_name;
-        
-        if(move_uploaded_file($_FILES['file-upload']['tmp_name'], $target_path)) {
-            $receipt_path = $target_path;
-        }
+    if ($this->conn->connect_error) {
+      die("Connection failed: " . $this->conn->connect_error);
     }
-    
-    $stmt = $conn->prepare("INSERT INTO expenses (title, category, amount, date, paid_by, status, payment_method, notes, receipt_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssdssssss", $title, $category, $amount, $date, $paid_by, $status, $payment_method, $notes, $receipt_path);
-    
-    if($stmt->execute()) {
-        // Redirect to prevent form resubmission
-        header("Location: " . $_SERVER['PHP_SELF'] . "?success=1");
-        exit();
-    } else {
-        $error_message = "Error: " . $stmt->error;
+
+    // Create the expenses table if it doesn't exist
+    $this->createExpensesTable();
+  }
+
+  /**
+   * Create expenses table if it doesn't exist
+   */
+  private function createExpensesTable()
+  {
+    $create_table_sql = "CREATE TABLE IF NOT EXISTS expenses (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            title VARCHAR(255) NOT NULL,
+            category VARCHAR(255) NOT NULL,
+            amount DECIMAL(10, 2) NOT NULL,
+            date DATE NOT NULL,
+            paid_by VARCHAR(255) NOT NULL,
+            status VARCHAR(50) NOT NULL,
+            payment_method VARCHAR(50) NOT NULL,
+            notes TEXT,
+            receipt_path VARCHAR(255),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )";
+
+    if ($this->conn->query($create_table_sql) === FALSE) {
+      die("Error creating table: " . $this->conn->error);
     }
-    
-    $stmt->close();
-}
+  }
 
-// Handle Expense Deletion
-if(isset($_GET['delete']) && is_numeric($_GET['delete'])) {
-    $id = $_GET['delete'];
-    $stmt = $conn->prepare("DELETE FROM expenses WHERE id = ?");
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-    $stmt->close();
-    
-    header("Location: " . $_SERVER['PHP_SELF'] . "?deleted=1");
-    exit();
-}
+  /**
+   * Get all expenses, with optional filtering
+   *
+   * @param array $filters Optional filtering criteria
+   * @return array Expenses matching the criteria
+   */
+  public function getAllExpenses($filters = [])
+  {
+    $where_clause = "";
+    $filter_params = [];
+    $param_types = "";
 
-// Process filter parameters
-$where_clause = "";
-$filter_params = [];
-$param_types = "";
+    if (!empty($filters)) {
+      $conditions = [];
 
-if(isset($_GET['filter'])) {
-    $conditions = [];
-    
-    if(!empty($_GET['category']) && $_GET['category'] != 'all') {
+      if (!empty($filters['category']) && $filters['category'] != 'all') {
         $conditions[] = "category = ?";
-        $filter_params[] = $_GET['category'];
+        $filter_params[] = $filters['category'];
         $param_types .= "s";
-    }
-    
-    if(!empty($_GET['month']) && $_GET['month'] != 'all') {
+      }
+
+      if (!empty($filters['month']) && $filters['month'] != 'all') {
         $conditions[] = "MONTH(date) = ?";
-        $filter_params[] = $_GET['month'];
+        $filter_params[] = $filters['month'];
         $param_types .= "i";
-    }
-    
-    if(!empty($_GET['year']) && $_GET['year'] != 'all') {
+      }
+
+      if (!empty($filters['year']) && $filters['year'] != 'all') {
         $conditions[] = "YEAR(date) = ?";
-        $filter_params[] = $_GET['year'];
+        $filter_params[] = $filters['year'];
         $param_types .= "i";
-    }
-    
-    if(!empty($_GET['search'])) {
+      }
+
+      if (!empty($filters['search'])) {
         $conditions[] = "(title LIKE ? OR notes LIKE ?)";
-        $search_term = "%" . $_GET['search'] . "%";
+        $search_term = "%" . $filters['search'] . "%";
         $filter_params[] = $search_term;
         $filter_params[] = $search_term;
         $param_types .= "ss";
-    }
-    
-    if(count($conditions) > 0) {
+      }
+
+      if (count($conditions) > 0) {
         $where_clause = "WHERE " . implode(" AND ", $conditions);
+      }
     }
-}
 
-// Retrieve expenses with optional filtering
-$expenses = [];
-$query = "SELECT id, title, category, amount, date, paid_by, status, payment_method, notes, receipt_path 
-          FROM expenses 
-          $where_clause
-          ORDER BY date DESC";
+    $query = "SELECT id, title, category, amount, date, paid_by, status, payment_method, notes, receipt_path 
+                  FROM expenses 
+                  $where_clause
+                  ORDER BY date DESC";
 
-if(!empty($param_types)) {
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param($param_types, ...$filter_params);
+    $expenses = [];
+
+    if (!empty($param_types)) {
+      $stmt = $this->conn->prepare($query);
+      $stmt->bind_param($param_types, ...$filter_params);
+      $stmt->execute();
+      $result = $stmt->get_result();
+    } else {
+      $result = $this->conn->query($query);
+    }
+
+    while ($row = $result->fetch_assoc()) {
+      $expenses[] = $row;
+    }
+
+    return $expenses;
+  }
+
+  /**
+   * Get a single expense by ID
+   *
+   * @param int $id Expense ID
+   * @return array|null Expense details or null if not found
+   */
+  public function getExpenseById($id)
+  {
+    $stmt = $this->conn->prepare("SELECT * FROM expenses WHERE id = ?");
+    $stmt->bind_param("i", $id);
     $stmt->execute();
     $result = $stmt->get_result();
-} else {
-    $result = $conn->query($query);
-}
 
-while ($row = $result->fetch_assoc()) {
-    $expenses[] = $row;
-}
+    if ($result->num_rows === 0) {
+      return null;
+    }
 
-// Calculate monthly summary
-$current_month = date('n');
-$current_year = date('Y');
+    return $result->fetch_assoc();
+  }
 
-// Total expenses for current month
-$month_total_query = "SELECT SUM(amount) as total FROM expenses WHERE MONTH(date) = ? AND YEAR(date) = ?";
-$stmt = $conn->prepare($month_total_query);
-$stmt->bind_param("ii", $current_month, $current_year);
-$stmt->execute();
-$month_total_result = $stmt->get_result()->fetch_assoc();
-$month_total = $month_total_result['total'] ?? 0;
+  /**
+   * Add a new expense
+   *
+   * @param array $expense_data Expense details
+   * @return int|bool New expense ID on success, false on failure
+   */
+  public function addExpense($expense_data)
+  {
+    $stmt = $this->conn->prepare("INSERT INTO expenses (title, category, amount, date, paid_by, status, payment_method, notes, receipt_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-// Category totals for current month
-$category_totals = [];
-$categories = ['Bills & Utilities', 'Purchases', 'Tax', 'Tea & Refreshments', 'Monthly Expenses'];
+    $stmt->bind_param(
+      "ssdssssss",
+      $expense_data['title'],
+      $expense_data['category'],
+      $expense_data['amount'],
+      $expense_data['date'],
+      $expense_data['paid_by'],
+      $expense_data['status'],
+      $expense_data['payment_method'],
+      $expense_data['notes'],
+      $expense_data['receipt_path']
+    );
 
-foreach($categories as $category) {
-    $query = "SELECT SUM(amount) as category_total FROM expenses WHERE category = ? AND MONTH(date) = ? AND YEAR(date) = ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("sii", $category, $current_month, $current_year);
+    if ($stmt->execute()) {
+      return $this->conn->insert_id;
+    }
+
+    return false;
+  }
+
+  /**
+   * Update an existing expense
+   *
+   * @param int $id Expense ID
+   * @param array $expense_data Updated expense details
+   * @return bool True on success, false on failure
+   */
+  public function updateExpense($id, $expense_data)
+  {
+    $stmt = $this->conn->prepare("UPDATE expenses SET 
+            title = ?, 
+            category = ?, 
+            amount = ?, 
+            date = ?, 
+            paid_by = ?, 
+            status = ?, 
+            payment_method = ?, 
+            notes = ?
+            WHERE id = ?");
+
+    $stmt->bind_param(
+      "ssdssssis",
+      $expense_data['title'],
+      $expense_data['category'],
+      $expense_data['amount'],
+      $expense_data['date'],
+      $expense_data['paid_by'],
+      $expense_data['status'],
+      $expense_data['payment_method'],
+      $expense_data['notes'],
+      $id
+    );
+
+    if ($stmt->execute()) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Update receipt path for an expense
+   *
+   * @param int $id Expense ID
+   * @param string $receipt_path Path to receipt file
+   * @return bool True on success, false on failure
+   */
+  public function updateReceiptPath($id, $receipt_path)
+  {
+    $stmt = $this->conn->prepare("UPDATE expenses SET receipt_path = ? WHERE id = ?");
+    $stmt->bind_param("si", $receipt_path, $id);
+
+    return $stmt->execute();
+  }
+
+  /**
+   * Delete an expense
+   *
+   * @param int $id Expense ID to delete
+   * @return bool True on success, false on failure
+   */
+  public function deleteExpense($id)
+  {
+    $stmt = $this->conn->prepare("DELETE FROM expenses WHERE id = ?");
+    $stmt->bind_param("i", $id);
+
+    return $stmt->execute();
+  }
+
+  /**
+   * Get monthly expense total
+   *
+   * @param int $month Month number (1-12)
+   * @param int $year Year (e.g., 2023)
+   * @return float Total expenses for the month
+   */
+  public function getMonthlyTotal($month, $year)
+  {
+    $stmt = $this->conn->prepare("SELECT SUM(amount) as total FROM expenses WHERE MONTH(date) = ? AND YEAR(date) = ?");
+    $stmt->bind_param("ii", $month, $year);
+    $stmt->execute();
+
+    $result = $stmt->get_result()->fetch_assoc();
+    return $result['total'] ?? 0;
+  }
+
+  /**
+   * Get monthly totals by category
+   *
+   * @param int $month Month number (1-12)
+   * @param int $year Year (e.g., 2023)
+   * @return array Category totals for the month
+   */
+  public function getMonthlyCategoryTotals($month, $year)
+  {
+    $query = "SELECT 
+                    category,
+                    SUM(amount) as category_total 
+                  FROM expenses 
+                  WHERE MONTH(date) = ? AND YEAR(date) = ?
+                  GROUP BY category";
+
+    $stmt = $this->conn->prepare($query);
+    $stmt->bind_param("ii", $month, $year);
+    $stmt->execute();
+
+    $result = $stmt->get_result();
+    $category_totals = [];
+
+    while ($row = $result->fetch_assoc()) {
+      $category_totals[$row['category']] = $row['category_total'];
+    }
+
+    return $category_totals;
+  }
+
+  /**
+   * Get total expenses by specific categories
+   *
+   * @param array $categories Array of category names
+   * @param int $month Month number (1-12)
+   * @param int $year Year (e.g., 2023)
+   * @return array Category totals
+   */
+  public function getTotalsByCategories($categories, $month, $year)
+  {
+    $category_totals = [];
+
+    foreach ($categories as $category) {
+      $query = "SELECT SUM(amount) as category_total FROM expenses WHERE category = ? AND MONTH(date) = ? AND YEAR(date) = ?";
+      $stmt = $this->conn->prepare($query);
+      $stmt->bind_param("sii", $category, $month, $year);
+      $stmt->execute();
+      $result = $stmt->get_result()->fetch_assoc();
+      $category_totals[$category] = $result['category_total'] ?? 0;
+    }
+
+    return $category_totals;
+  }
+
+  /**
+   * Get monthly totals aggregated by year and month
+   *
+   * @return array Monthly totals and category breakdowns
+   */
+  public function getMonthlyTotals()
+  {
+    $query = "SELECT 
+                    YEAR(date) as year, 
+                    MONTH(date) as month, 
+                    SUM(amount) as total,
+                    SUM(CASE WHEN category = 'Bills & Utilities' THEN amount ELSE 0 END) as bills_total,
+                    SUM(CASE WHEN category = 'Purchases' THEN amount ELSE 0 END) as purchases_total,
+                    SUM(CASE WHEN category = 'Tea & Refreshments' THEN amount ELSE 0 END) as tea_total,
+                    SUM(CASE WHEN category = 'Monthly Expenses' THEN amount ELSE 0 END) as monthly_total
+                  FROM expenses 
+                  GROUP BY YEAR(date), MONTH(date) 
+                  ORDER BY year DESC, month DESC";
+
+    $result = $this->conn->query($query);
+    $monthly_totals = [];
+
+    while ($row = $result->fetch_assoc()) {
+      $monthly_totals[] = $row;
+    }
+
+    return $monthly_totals;
+  }
+
+  /**
+   * Get all expense categories
+   *
+   * @return array List of unique categories
+   */
+  public function getAllCategories()
+  {
+    $query = "SELECT DISTINCT category FROM expenses ORDER BY category";
+    $result = $this->conn->query($query);
+    $categories = [];
+
+    while ($row = $result->fetch_assoc()) {
+      $categories[] = $row['category'];
+    }
+
+    return $categories;
+  }
+
+  /**
+   * Get all paid by persons
+   *
+   * @return array List of unique persons who paid
+   */
+  public function getAllPaidByPersons()
+  {
+    $query = "SELECT DISTINCT paid_by FROM expenses ORDER BY paid_by";
+    $result = $this->conn->query($query);
+    $persons = [];
+
+    while ($row = $result->fetch_assoc()) {
+      $persons[] = $row['paid_by'];
+    }
+
+    return $persons;
+  }
+
+  /**
+   * Handle file upload for expense receipt
+   *
+   * @param array $file File data from $_FILES
+   * @return string|false Path to uploaded file or false on failure
+   */
+  public function handleFileUpload($file)
+  {
+    if (isset($file) && $file['error'] == 0) {
+      $upload_dir = 'uploads/receipts/';
+
+      // Create directory if it doesn't exist
+      if (!file_exists($upload_dir)) {
+        mkdir($upload_dir, 0777, true);
+      }
+
+      $file_name = time() . '_' . basename($file['name']);
+      $target_path = $upload_dir . $file_name;
+
+      if (move_uploaded_file($file['tmp_name'], $target_path)) {
+        return $target_path;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Get expense statistics for dashboard
+   *
+   * @return array Statistics data
+   */
+  public function getExpenseStats()
+  {
+    $current_month = date('n');
+    $current_year = date('Y');
+    $previous_month = ($current_month == 1) ? 12 : $current_month - 1;
+    $previous_month_year = ($current_month == 1) ? $current_year - 1 : $current_year;
+
+    // Current month total
+    $current_month_total = $this->getMonthlyTotal($current_month, $current_year);
+
+    // Previous month total
+    $previous_month_total = $this->getMonthlyTotal($previous_month, $previous_month_year);
+
+    // Month over month change
+    $month_change_percent = 0;
+    if ($previous_month_total > 0) {
+      $month_change_percent = (($current_month_total - $previous_month_total) / $previous_month_total) * 100;
+    }
+
+    // Current year total
+    $stmt = $this->conn->prepare("SELECT SUM(amount) as total FROM expenses WHERE YEAR(date) = ?");
+    $stmt->bind_param("i", $current_year);
     $stmt->execute();
     $result = $stmt->get_result()->fetch_assoc();
-    $category_totals[$category] = $result['category_total'] ?? 0;
-}
+    $year_total = $result['total'] ?? 0;
 
-// Calculate monthly totals for all months
-$monthly_totals_query = "SELECT 
-                            YEAR(date) as year, 
-                            MONTH(date) as month, 
-                            SUM(amount) as total,
-                            SUM(CASE WHEN category = 'Bills & Utilities' THEN amount ELSE 0 END) as bills_total,
-                            SUM(CASE WHEN category = 'Purchases' THEN amount ELSE 0 END) as purchases_total,
-                            SUM(CASE WHEN category = 'Tea & Refreshments' THEN amount ELSE 0 END) as tea_total,
-                            SUM(CASE WHEN category = 'Monthly Expenses' THEN amount ELSE 0 END) as monthly_total
-                        FROM expenses 
-                        GROUP BY YEAR(date), MONTH(date) 
-                        ORDER BY year DESC, month DESC";
-                        
-$monthly_totals_result = $conn->query($monthly_totals_query);
-$monthly_totals = [];
+    // Top categories
+    $query = "SELECT 
+                    category, 
+                    SUM(amount) as total 
+                  FROM expenses 
+                  WHERE MONTH(date) = ? AND YEAR(date) = ?
+                  GROUP BY category 
+                  ORDER BY total DESC 
+                  LIMIT 3";
 
-while($row = $monthly_totals_result->fetch_assoc()) {
-    $monthly_totals[] = $row;
-}
+    $stmt = $this->conn->prepare($query);
+    $stmt->bind_param("ii", $current_month, $current_year);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-// Close the database connection
-$conn->close();
+    $top_categories = [];
+    while ($row = $result->fetch_assoc()) {
+      $top_categories[] = $row;
+    }
 
-// Helper function to get month name from number
-function getMonthName($month_number) {
-    return date("F", mktime(0, 0, 0, $month_number, 1));
-}
+    return [
+      'current_month_total' => $current_month_total,
+      'previous_month_total' => $previous_month_total,
+      'month_change_percent' => $month_change_percent,
+      'year_total' => $year_total,
+      'top_categories' => $top_categories
+    ];
+  }
 
-// Helper function to format money amount
-function formatMoney($amount) {
+  /**
+   * Helper function to format money amount
+   *
+   * @param float $amount Amount to format
+   * @return string Formatted amount
+   */
+  public static function formatMoney($amount)
+  {
     return '$' . number_format($amount, 2);
+  }
+
+  /**
+   * Helper function to get month name from number
+   *
+   * @param int $month_number Month number (1-12)
+   * @return string Month name
+   */
+  public static function getMonthName($month_number)
+  {
+    return date("F", mktime(0, 0, 0, $month_number, 1));
+  }
+
+  /**
+   * Destructor - Close the database connection
+   */
+  public function __destruct()
+  {
+    $this->conn->close();
+  }
 }
+
+/**
+ * Controller functions for expense management
+ */
+
+/**
+ * Handle the Add Expense form submission
+ */
+function handleAddExpense()
+{
+  if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['expense-title'])) {
+    $expenseModel = new ExpenseModel();
+
+    // Collect form data
+    $expense_data = [
+      'title' => $_POST['expense-title'],
+      'category' => $_POST['category'],
+      'amount' => $_POST['amount'],
+      'date' => $_POST['expense-date'],
+      'paid_by' => $_POST['paid-by'],
+      'status' => $_POST['status'],
+      'payment_method' => $_POST['payment-method'],
+      'notes' => $_POST['notes'],
+      'receipt_path' => ''
+    ];
+
+    // Handle file upload if present
+    if (isset($_FILES['file-upload']) && $_FILES['file-upload']['error'] == 0) {
+      $receipt_path = $expenseModel->handleFileUpload($_FILES['file-upload']);
+      if ($receipt_path) {
+        $expense_data['receipt_path'] = $receipt_path;
+      }
+    }
+
+    // Add the expense
+    $result = $expenseModel->addExpense($expense_data);
+
+    if ($result) {
+      // Redirect to prevent form resubmission
+      header("Location: " . $_SERVER['PHP_SELF'] . "?success=1");
+      exit();
+    } else {
+      $GLOBALS['error_message'] = "Error adding expense.";
+    }
+  }
+}
+
+/**
+ * Handle expense deletion
+ */
+function handleDeleteExpense()
+{
+  if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
+    $expenseModel = new ExpenseModel();
+    $id = $_GET['delete'];
+
+    // Get the expense to check if it has a receipt file
+    $expense = $expenseModel->getExpenseById($id);
+
+    // Delete the expense
+    $result = $expenseModel->deleteExpense($id);
+
+    if ($result) {
+      // Delete the receipt file if it exists
+      if (!empty($expense['receipt_path']) && file_exists($expense['receipt_path'])) {
+        unlink($expense['receipt_path']);
+      }
+
+      header("Location: " . $_SERVER['PHP_SELF'] . "?deleted=1");
+      exit();
+    }
+  }
+}
+
+/**
+ * Get expenses with optional filtering
+ */
+function getExpenses()
+{
+  $expenseModel = new ExpenseModel();
+  $filters = [];
+
+  // Process filter parameters if present
+  if (isset($_GET['filter'])) {
+    if (!empty($_GET['category']) && $_GET['category'] != 'all') {
+      $filters['category'] = $_GET['category'];
+    }
+
+    if (!empty($_GET['month']) && $_GET['month'] != 'all') {
+      $filters['month'] = $_GET['month'];
+    }
+
+    if (!empty($_GET['year']) && $_GET['year'] != 'all') {
+      $filters['year'] = $_GET['year'];
+    }
+
+    if (!empty($_GET['search'])) {
+      $filters['search'] = $_GET['search'];
+    }
+  }
+
+  // Get filtered expenses
+  return $expenseModel->getAllExpenses($filters);
+}
+
+/**
+ * Get monthly summary data for display
+ */
+function getMonthlySummary()
+{
+  $expenseModel = new ExpenseModel();
+
+  // Current month and year
+  $current_month = date('n');
+  $current_year = date('Y');
+
+  // Total expenses for current month
+  $month_total = $expenseModel->getMonthlyTotal($current_month, $current_year);
+
+  // Category totals
+  $categories = ['Bills & Utilities', 'Purchases', 'Tax', 'Tea & Refreshments', 'Monthly Expenses'];
+  $category_totals = $expenseModel->getTotalsByCategories($categories, $current_month, $current_year);
+
+  // Monthly totals for all months
+  $monthly_totals = $expenseModel->getMonthlyTotals();
+
+  return [
+    'month_total' => $month_total,
+    'category_totals' => $category_totals,
+    'monthly_totals' => $monthly_totals
+  ];
+}
+
+/**
+ * Format money amount 
+ */
+function formatMoney($amount)
+{
+  return ExpenseModel::formatMoney($amount);
+}
+
+/**
+ * Get month name from number
+ */
+function getMonthName($month_number)
+{
+  return ExpenseModel::getMonthName($month_number);
+}
+
+// Initialize the expense model
+$expenseModel = new ExpenseModel();
+
+// Handle form submissions
+handleAddExpense();
+handleDeleteExpense();
+
+// Get expenses for display
+$expenses = getExpenses();
+
+// Get monthly summary data
+$summary_data = getMonthlySummary();
+$month_total = $summary_data['month_total'];
+$category_totals = $summary_data['category_totals'];
+$monthly_totals = $summary_data['monthly_totals'];
+
+// Get all unique categories for dropdown/filtering
+$all_categories = $expenseModel->getAllCategories();
+
+// Get all unique paid-by persons
+$all_paid_by = $expenseModel->getAllPaidByPersons();
+
+// Get expense statistics for dashboard
+$expense_stats = $expenseModel->getExpenseStats();
 ?>
 
 <!DOCTYPE html>
@@ -207,9 +677,7 @@ function formatMoney($amount) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BS Traders - Expense Management</title>
   <link rel="stylesheet" href="../src/output.css">
-  <link
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-    rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
   <script>
     tailwind.config = {
       theme: {
@@ -313,7 +781,7 @@ function formatMoney($amount) {
         </div>
       </div>
     </aside>
-    
+
     <!-- Main content -->
     <div class="flex flex-col flex-1 overflow-hidden">
       <!-- Top navbar -->
@@ -405,8 +873,7 @@ function formatMoney($amount) {
       <main class="flex-1 overflow-y-auto p-4 bg-gray-50">
         <div class="max-w-7xl mx-auto">
           <!-- Page header -->
-          <div
-            class="pb-5 border-b border-gray-200 sm:flex sm:items-center sm:justify-between">
+          <div class="pb-5 border-b border-gray-200 sm:flex sm:items-center sm:justify-between">
             <h3 class="text-lg leading-6 font-medium text-gray-900">
               Expense Management
             </h3>
@@ -422,21 +889,21 @@ function formatMoney($amount) {
           </div>
 
           <?php if (isset($_GET['success'])): ?>
-          <div class="mt-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4" role="alert">
-            <p>Expense added successfully!</p>
-          </div>
+            <div class="mt-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4" role="alert">
+              <p>Expense added successfully!</p>
+            </div>
           <?php endif; ?>
 
           <?php if (isset($_GET['deleted'])): ?>
-          <div class="mt-4 bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4" role="alert">
-            <p>Expense deleted successfully!</p>
-          </div>
+            <div class="mt-4 bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4" role="alert">
+              <p>Expense deleted successfully!</p>
+            </div>
           <?php endif; ?>
 
           <?php if (isset($error_message)): ?>
-          <div class="mt-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4" role="alert">
-            <p><?php echo $error_message; ?></p>
-          </div>
+            <div class="mt-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4" role="alert">
+              <p><?php echo $error_message; ?></p>
+            </div>
           <?php endif; ?>
 
           <!-- Expense Summary Cards -->
@@ -456,6 +923,10 @@ function formatMoney($amount) {
                       <dd>
                         <div class="text-lg font-medium text-gray-900">
                           <?php echo formatMoney($month_total); ?>
+                        </div>
+                        <div class="text-sm text-<?php echo $expense_stats['month_change_percent'] >= 0 ? 'red' : 'green'; ?>-500">
+                          <?php echo $expense_stats['month_change_percent'] >= 0 ? '+' : ''; ?>
+                          <?php echo number_format($expense_stats['month_change_percent'], 1); ?>% from last month
                         </div>
                       </dd>
                     </dl>
@@ -478,7 +949,7 @@ function formatMoney($amount) {
                       </dt>
                       <dd>
                         <div class="text-lg font-medium text-gray-900">
-                          <?php echo formatMoney($category_totals['Bills & Utilities']); ?>
+                          <?php echo formatMoney($category_totals['Bills & Utilities'] ?? 0); ?>
                         </div>
                       </dd>
                     </dl>
@@ -501,7 +972,7 @@ function formatMoney($amount) {
                       </dt>
                       <dd>
                         <div class="text-lg font-medium text-gray-900">
-                          <?php echo formatMoney($category_totals['Purchases']); ?>
+                          <?php echo formatMoney($category_totals['Purchases'] ?? 0); ?>
                         </div>
                       </dd>
                     </dl>
@@ -524,7 +995,7 @@ function formatMoney($amount) {
                       </dt>
                       <dd>
                         <div class="text-lg font-medium text-gray-900">
-                          <?php echo formatMoney($category_totals['Tea & Refreshments']); ?>
+                          <?php echo formatMoney($category_totals['Tea & Refreshments'] ?? 0); ?>
                         </div>
                       </dd>
                     </dl>
@@ -550,23 +1021,25 @@ function formatMoney($amount) {
                     value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>" />
                 </div>
                 <div>
-                  <select
+                  <input
+                    type="text"
                     name="category"
-                    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                    <option value="all">All Categories</option>
-                    <option value="Bills & Utilities" <?php echo (isset($_GET['category']) && $_GET['category'] == 'Bills & Utilities') ? 'selected' : ''; ?>>Bills & Utilities</option>
-                    <option value="Purchases" <?php echo (isset($_GET['category']) && $_GET['category'] == 'Purchases') ? 'selected' : ''; ?>>Purchases</option>
-                    <option value="Tax" <?php echo (isset($_GET['category']) && $_GET['category'] == 'Tax') ? 'selected' : ''; ?>>Tax</option>
-                    <option value="Tea & Refreshments" <?php echo (isset($_GET['category']) && $_GET['category'] == 'Tea & Refreshments') ? 'selected' : ''; ?>>Tea & Refreshments</option>
-                    <option value="Monthly Expenses" <?php echo (isset($_GET['category']) && $_GET['category'] == 'Monthly Expenses') ? 'selected' : ''; ?>>Monthly Expenses</option>
-                  </select>
+                    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+                    placeholder="Filter by category"
+                    list="category-options"
+                    value="<?php echo (isset($_GET['category']) && $_GET['category'] != 'all') ? htmlspecialchars($_GET['category']) : ''; ?>" />
+                  <datalist id="category-options">
+                    <?php foreach ($all_categories as $category): ?>
+                      <option value="<?php echo htmlspecialchars($category); ?>">
+                      <?php endforeach; ?>
+                  </datalist>
                 </div>
                 <div>
                   <select
                     name="month"
                     class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
                     <option value="all">All Months</option>
-                    <?php for($i = 1; $i <= 12; $i++): ?>
+                    <?php for ($i = 1; $i <= 12; $i++): ?>
                       <option value="<?php echo $i; ?>" <?php echo (isset($_GET['month']) && $_GET['month'] == $i) ? 'selected' : ''; ?>>
                         <?php echo date('F', mktime(0, 0, 0, $i, 1)); ?>
                       </option>
@@ -578,9 +1051,9 @@ function formatMoney($amount) {
                     name="year"
                     class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
                     <option value="all">All Years</option>
-                    <?php 
-                      $current_year = date('Y');
-                      for($i = $current_year; $i >= $current_year-2; $i--): 
+                    <?php
+                    $current_year = date('Y');
+                    for ($i = $current_year; $i >= $current_year - 2; $i--):
                     ?>
                       <option value="<?php echo $i; ?>" <?php echo (isset($_GET['year']) && $_GET['year'] == $i) ? 'selected' : ''; ?>>
                         Year <?php echo $i; ?>
@@ -617,53 +1090,37 @@ function formatMoney($amount) {
           <div class="mt-6">
             <div class="flex flex-col">
               <div class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-                <div
-                  class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
-                  <div
-                    class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+                <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+                  <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
                     <table class="min-w-full divide-y divide-gray-200">
                       <thead class="bg-gray-50">
                         <tr>
-                          <th
-                            scope="col"
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Expense
                           </th>
-                          <th
-                            scope="col"
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Category
                           </th>
-                          <th
-                            scope="col"
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Date
                           </th>
-                          <th
-                            scope="col"
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Amount
                           </th>
-                          <th
-                            scope="col"
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Paid By
                           </th>
-                          <th
-                            scope="col"
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Status
                           </th>
-                          <th
-                            scope="col"
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Actions
                           </th>
                         </tr>
                       </thead>
                       <tbody class="bg-white divide-y divide-gray-200">
-                        <?php if(count($expenses) > 0): ?>
-                          <?php foreach($expenses as $expense): ?>
+                        <?php if (count($expenses) > 0): ?>
+                          <?php foreach ($expenses as $expense): ?>
                             <tr>
                               <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm font-medium text-gray-900">
@@ -686,11 +1143,11 @@ function formatMoney($amount) {
                                 <?php echo htmlspecialchars($expense['paid_by']); ?>
                               </td>
                               <td class="px-6 py-4 whitespace-nowrap">
-                                <?php if($expense['status'] == 'Paid'): ?>
+                                <?php if ($expense['status'] == 'Paid'): ?>
                                   <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                                     Paid
                                   </span>
-                                <?php elseif($expense['status'] == 'Pending'): ?>
+                                <?php elseif ($expense['status'] == 'Pending'): ?>
                                   <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
                                     Pending
                                   </span>
@@ -724,19 +1181,14 @@ function formatMoney($amount) {
             <!-- Pagination -->
             <div class="mt-4 flex items-center justify-between">
               <div class="flex-1 flex justify-between sm:hidden">
-                <a
-                  href="#"
-                  class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                   Previous
                 </a>
-                <a
-                  href="#"
-                  class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                <a href="#" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                   Next
                 </a>
               </div>
-              <div
-                class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
                   <p class="text-sm text-gray-700">
                     Showing <span class="font-medium"><?php echo count($expenses) > 0 ? 1 : 0; ?></span> to
@@ -745,24 +1197,15 @@ function formatMoney($amount) {
                   </p>
                 </div>
                 <div>
-                  <nav
-                    class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
-                    aria-label="Pagination">
-                    <a
-                      href="#"
-                      class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                  <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                       <span class="sr-only">Previous</span>
                       <i class="fas fa-chevron-left h-5 w-5"></i>
                     </a>
-                    <a
-                      href="#"
-                      aria-current="page"
-                      class="z-10 bg-primary-50 border-primary-500 text-primary-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+                    <a href="#" aria-current="page" class="z-10 bg-primary-50 border-primary-500 text-primary-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
                       1
                     </a>
-                    <a
-                      href="#"
-                      class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                    <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                       <span class="sr-only">Next</span>
                       <i class="fas fa-chevron-right h-5 w-5"></i>
                     </a>
@@ -800,8 +1243,8 @@ function formatMoney($amount) {
                         </tr>
                       </thead>
                       <tbody class="bg-white divide-y divide-gray-200">
-                        <?php if(count($monthly_totals) > 0): ?>
-                          <?php foreach($monthly_totals as $month_data): ?>
+                        <?php if (count($monthly_totals) > 0): ?>
+                          <?php foreach ($monthly_totals as $month_data): ?>
                             <tr>
                               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                 <?php echo getMonthName($month_data['month']) . ' ' . $month_data['year']; ?>
@@ -839,214 +1282,245 @@ function formatMoney($amount) {
     </div>
   </div>
 
-  <!-- Add Expense Modal -->
-  <div id="addExpenseModal" class="fixed z-10 inset-0 overflow-y-auto hidden">
-    <div
-      class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-      <div
-        class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-        id="modalOverlay"></div>
+  <!-- Add Expense Modal with Modern Design -->
+  <div id="addExpenseModal" class="fixed z-50 inset-0 overflow-y-auto hidden">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+      <!-- Background overlay with blur effect -->
+      <div class="fixed inset-0 bg-gray-900 bg-opacity-75 backdrop-blur-sm transition-opacity" id="modalOverlay"></div>
+
       <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-      <div
-        class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+
+      <!-- Modal container with rounded corners and subtle shadow -->
+      <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-xl px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6 border border-gray-200 dark:border-gray-700">
+        <!-- Close button with hover effect -->
         <div class="absolute top-0 right-0 pt-4 pr-4">
-          <button
-            type="button"
-            class="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          <button type="button"
+            class="bg-white dark:bg-gray-800 rounded-full p-1 text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
             onclick="closeModal()">
             <span class="sr-only">Close</span>
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times h-5 w-5"></i>
           </button>
         </div>
+
         <div>
-          <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-            <h3
-              class="text-lg leading-6 font-medium text-gray-900"
-              id="modal-title">
-              Add New Expense
-            </h3>
+          <div class="sm:mt-0 sm:text-left">
+            <!-- Title with decorative element -->
+            <div class="flex items-center mb-4">
+              <div class="bg-primary-600 h-8 w-1 rounded-full mr-3"></div>
+              <h3 class="text-xl leading-6 font-bold text-gray-900 dark:text-white" id="modal-title">
+                Add New Expense
+              </h3>
+            </div>
+
+            <!-- Form with modern styling -->
             <div class="mt-4">
-              <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="POST" enctype="multipart/form-data">
+              <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="POST" enctype="multipart/form-data" class="space-y-6">
                 <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                  <!-- Expense Title -->
                   <div class="sm:col-span-6">
-                    <label
-                      for="expense-title"
-                      class="block text-sm font-medium text-gray-700">Expense Title</label>
-                    <div class="mt-1">
-                      <input
-                        type="text"
+                    <label for="expense-title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Expense Title
+                    </label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-tag text-gray-400"></i>
+                      </div>
+                      <input type="text"
                         name="expense-title"
                         id="expense-title"
-                        class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                        class="pl-10 shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg"
+                        placeholder="Enter expense title"
                         required />
                     </div>
                   </div>
+
+                  <!-- Category - Text Input -->
                   <div class="sm:col-span-3">
-                    <label
-                      for="category"
-                      class="block text-sm font-medium text-gray-700">Category</label>
-                    <div class="mt-1">
-                      <select
+                    <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Category
+                    </label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-folder text-gray-400"></i>
+                      </div>
+                      <input type="text"
                         id="category"
                         name="category"
-                        class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                        required>
-                        <option value="">Select Category</option>
-                        <option value="Bills & Utilities">Bills & Utilities</option>
-                        <option value="Purchases">Purchases</option>
-                        <option value="Tax">Tax</option>
-                        <option value="Tea & Refreshments">Tea & Refreshments</option>
-                        <option value="Monthly Expenses">Monthly Expenses</option>
-                      </select>
+                        class="pl-10 shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg"
+                        placeholder="Enter category"
+                        list="category-options"
+                        required />
+                      <datalist id="category-options">
+                        <?php foreach ($all_categories as $category): ?>
+                          <option value="<?php echo htmlspecialchars($category); ?>">
+                          <?php endforeach; ?>
+                      </datalist>
                     </div>
                   </div>
+
+                  <!-- Date -->
                   <div class="sm:col-span-3">
-                    <label
-                      for="expense-date"
-                      class="block text-sm font-medium text-gray-700">Date</label>
-                    <div class="mt-1">
-                      <input
-                        type="date"
+                    <label for="expense-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Date
+                    </label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-calendar text-gray-400"></i>
+                      </div>
+                      <input type="date"
                         name="expense-date"
                         id="expense-date"
-                        class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md" 
+                        class="pl-10 shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg"
                         value="<?php echo date('Y-m-d'); ?>"
                         required />
                     </div>
                   </div>
+
+                  <!-- Amount -->
                   <div class="sm:col-span-3">
-                    <label
-                      for="amount"
-                      class="block text-sm font-medium text-gray-700">Amount</label>
+                    <label for="amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Amount
+                    </label>
                     <div class="mt-1 relative rounded-md shadow-sm">
-                      <div
-                        class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <span class="text-gray-500 sm:text-sm">$</span>
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span class="text-gray-500 dark:text-gray-400 sm:text-sm">$</span>
                       </div>
-                      <input
-                        type="number"
+                      <input type="number"
                         step="0.01"
                         name="amount"
                         id="amount"
-                        class="focus:ring-primary-500 focus:border-primary-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md"
+                        class="pl-7 focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg"
                         placeholder="0.00"
                         required />
                     </div>
                   </div>
+
+                  <!-- Paid By - Text Input Field -->
                   <div class="sm:col-span-3">
-                    <label
-                      for="paid-by"
-                      class="block text-sm font-medium text-gray-700">Paid By</label>
-                    <div class="mt-1">
-                      <select
+                    <label for="paid-by" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Paid By
+                    </label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-user text-gray-400"></i>
+                      </div>
+                      <input type="text"
                         id="paid-by"
                         name="paid-by"
-                        class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                        required>
-                        <option value="">Select Employee</option>
-                        <option value="Ahmed Khan">Ahmed Khan</option>
-                        <option value="Sara Ali">Sara Ali</option>
-                        <option value="Bilal Ahmad">Bilal Ahmad</option>
-                        <option value="Ayesha Malik">Ayesha Malik</option>
-                        <option value="Omar Farooq">Omar Farooq</option>
-                      </select>
+                        class="pl-10 shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg"
+                        placeholder="Enter name"
+                        list="paid-by-options"
+                        required />
+                      <!-- Datalist for paid-by suggestions -->
+                      <datalist id="paid-by-options">
+                        <?php foreach ($all_paid_by as $person): ?>
+                          <option value="<?php echo htmlspecialchars($person); ?>">
+                          <?php endforeach; ?>
+                      </datalist>
                     </div>
                   </div>
+
+                  <!-- Status - Select with Modern Styling -->
                   <div class="sm:col-span-3">
-                    <label
-                      for="status"
-                      class="block text-sm font-medium text-gray-700">Status</label>
-                    <div class="mt-1">
-                      <select
-                        id="status"
+                    <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Status
+                    </label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-check-circle text-gray-400"></i>
+                      </div>
+                      <select id="status"
                         name="status"
-                        class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                        class="pl-10 shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg appearance-none"
                         required>
                         <option value="Paid">Paid</option>
                         <option value="Pending">Pending</option>
                         <option value="Rejected">Rejected</option>
                       </select>
+                      <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                        <i class="fas fa-chevron-down text-gray-400"></i>
+                      </div>
                     </div>
                   </div>
+
+                  <!-- Payment Method - Select with Modern Styling -->
                   <div class="sm:col-span-3">
-                    <label
-                      for="payment-method"
-                      class="block text-sm font-medium text-gray-700">Payment Method</label>
-                    <div class="mt-1">
-                      <select
-                        id="payment-method"
+                    <label for="payment-method" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Payment Method
+                    </label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-credit-card text-gray-400"></i>
+                      </div>
+                      <select id="payment-method"
                         name="payment-method"
-                        class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                        class="pl-10 shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg appearance-none"
                         required>
                         <option value="Cash">Cash</option>
                         <option value="Bank Transfer">Bank Transfer</option>
                         <option value="Credit Card">Credit Card</option>
                         <option value="Other">Other</option>
                       </select>
+                      <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                        <i class="fas fa-chevron-down text-gray-400"></i>
+                      </div>
                     </div>
                   </div>
+
+                  <!-- Receipt Upload - Modern Design -->
                   <div class="sm:col-span-6">
-                    <label
-                      for="receipt"
-                      class="block text-sm font-medium text-gray-700">Receipt</label>
-                    <div
-                      class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                    <label for="receipt" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Receipt
+                    </label>
+                    <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
                       <div class="space-y-1 text-center">
-                        <svg
-                          class="mx-auto h-12 w-12 text-gray-400"
-                          stroke="currentColor"
-                          fill="none"
-                          viewBox="0 0 48 48"
-                          aria-hidden="true">
-                          <path
-                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4h-12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round" />
+                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                          <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4h-12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
-                        <div class="flex text-sm text-gray-600">
-                          <label
-                            for="file-upload"
-                            class="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500">
+                        <div class="flex text-sm text-gray-600 dark:text-gray-400">
+                          <label for="file-upload" class="relative cursor-pointer bg-white dark:bg-transparent rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none">
                             <span>Upload a file</span>
-                            <input
-                              id="file-upload"
-                              name="file-upload"
-                              type="file"
-                              class="sr-only" />
+                            <input id="file-upload" name="file-upload" type="file" class="sr-only" />
                           </label>
                           <p class="pl-1">or drag and drop</p>
                         </div>
-                        <p class="text-xs text-gray-500">
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
                           PNG, JPG, PDF up to 10MB
                         </p>
                       </div>
                     </div>
                   </div>
+
+                  <!-- Notes - Textarea with Modern Styling -->
                   <div class="sm:col-span-6">
-                    <label
-                      for="notes"
-                      class="block text-sm font-medium text-gray-700">Notes</label>
-                    <div class="mt-1">
-                      <textarea
-                        id="notes"
+                    <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Notes
+                    </label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                      <div class="absolute top-3 left-3 flex items-start pointer-events-none">
+                        <i class="fas fa-sticky-note text-gray-400"></i>
+                      </div>
+                      <textarea id="notes"
                         name="notes"
                         rows="3"
-                        class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"></textarea>
+                        class="pl-10 shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg"
+                        placeholder="Add any additional notes here..."></textarea>
                     </div>
                   </div>
                 </div>
-                <div
-                  class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
-                  <button
-                    type="submit"
-                    class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:col-start-2 sm:text-sm">
-                    Save
+
+                <!-- Action Buttons with Modern Design -->
+                <div class="mt-6 sm:mt-8 flex flex-col sm:flex-row-reverse gap-3">
+                  <button type="submit"
+                    class="w-full sm:w-auto flex justify-center items-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors">
+                    <i class="fas fa-save mr-2"></i>
+                    Save Expense
                   </button>
-                  <button
-                    type="button"
-                    class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:col-start-1 sm:text-sm"
+                  <button type="button"
+                    class="w-full sm:w-auto flex justify-center items-center px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-base font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
                     onclick="closeModal()">
+                    <i class="fas fa-times mr-2"></i>
                     Cancel
                   </button>
                 </div>
@@ -1091,7 +1565,7 @@ function formatMoney($amount) {
 
     // Mobile sidebar toggle
     const sidebarToggle = document.getElementById("sidebarToggle");
-    
+
     if (sidebarToggle) {
       sidebarToggle.addEventListener("click", () => {
         // Add your sidebar toggle logic here
@@ -1111,28 +1585,28 @@ function formatMoney($amount) {
     document
       .getElementById("modalOverlay")
       .addEventListener("click", closeModal);
-      
+
     // Confirm delete function
     function confirmDelete(id) {
       if (confirm("Are you sure you want to delete this expense?")) {
         window.location.href = "<?php echo $_SERVER['PHP_SELF']; ?>?delete=" + id;
       }
     }
-    
+
     // Show success message for a limited time
     const successAlert = document.querySelector('.bg-green-100');
     const deletedAlert = document.querySelector('.bg-blue-100');
-    
+
     if (successAlert || deletedAlert) {
       setTimeout(() => {
         if (successAlert) successAlert.style.display = 'none';
         if (deletedAlert) deletedAlert.style.display = 'none';
       }, 5000);
     }
-    
+
     <?php if (isset($_GET['success']) || isset($_GET['deleted'])): ?>
-    // Push the success/delete URL state without the query parameters
-    window.history.replaceState({}, document.title, "<?php echo $_SERVER['PHP_SELF']; ?>");
+      // Push the success/delete URL state without the query parameters
+      window.history.replaceState({}, document.title, "<?php echo $_SERVER['PHP_SELF']; ?>");
     <?php endif; ?>
   </script>
 </body>

@@ -188,6 +188,11 @@ $assignees = $conn->query($query_assignees)->fetch_all(MYSQLI_ASSOC);
       }
     }
   </script>
+  <style>
+    body{
+      height: 100vh;
+    }
+  </style>
 </head>
 
 <body class="bg-gray-50">
@@ -647,7 +652,7 @@ $assignees = $conn->query($query_assignees)->fetch_all(MYSQLI_ASSOC);
                                 <button type="button" class="text-primary-600 hover:text-primary-900 dropdown-toggle">
                                   <i class="fas fa-sync-alt"></i>
                                 </button>
-                                <div class="dropdown-menu hidden absolute right-0 mt-2 w-48 bg-white shadow-lg py-1 rounded-md">
+                                <div class="dropdown-menu hidden absolute bottom-0 right-0 mt-2 w-48 bg-white shadow-lg py-1 rounded-md">
                                   <a href="?update_status=<?php echo $task['id']; ?>&status=pending" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Mark as Pending</a>
                                   <a href="?update_status=<?php echo $task['id']; ?>&status=in_progress" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Mark as In Progress</a>
                                   <a href="?update_status=<?php echo $task['id']; ?>&status=completed" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Mark as Completed</a>
