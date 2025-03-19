@@ -21,57 +21,7 @@ if ($salaryStats) {
   $monthlySalaryTotal = $salaryStats['total_paid'] ?? 0;
 }
 
-// Calculate pending tasks
-// This would typically come from a TaskModel, but for now we'll set a placeholder
-$pendingTasks = 12;
-
-// Calculate total employees
-// This would typically come from a EmployeeModel, but for now we'll set a placeholder
-$totalEmployees = 24;
-
-// Calculate total expenses
-// This would typically come from a ExpenseModel, but for now we'll set a placeholder
-$totalExpenses = 4200;
-
-// Get recent activities
-// Ideally this would be from an activity log table, for now using placeholders
-$recentActivities = [
-  [
-    'type' => 'Salary Payment',
-    'user' => 'John Smith',
-    'date' => 'March 10, 2025',
-    'status' => 'Completed',
-    'status_class' => 'bg-green-100 text-green-800'
-  ],
-  [
-    'type' => 'Advance Request',
-    'user' => 'Sarah Johnson',
-    'date' => 'March 9, 2025',
-    'status' => 'Pending',
-    'status_class' => 'bg-yellow-100 text-yellow-800'
-  ],
-  [
-    'type' => 'Expense Report',
-    'user' => 'Michael Brown',
-    'date' => 'March 8, 2025',
-    'status' => 'In Review',
-    'status_class' => 'bg-blue-100 text-blue-800'
-  ],
-  [
-    'type' => 'New Employee Added',
-    'user' => 'Jessica Davis',
-    'date' => 'March 7, 2025',
-    'status' => 'Completed',
-    'status_class' => 'bg-green-100 text-green-800'
-  ],
-  [
-    'type' => 'Contract Renewal',
-    'user' => 'Robert Wilson',
-    'date' => 'March 6, 2025',
-    'status' => 'Rejected',
-    'status_class' => 'bg-red-100 text-red-800'
-  ]
-];
+$recentActivities = $salaryModel->getRecentActivities(5); // Get 5 most recent activities
 
 // Get pending salary advances needing approval
 $pendingAdvances = [];
@@ -426,7 +376,7 @@ $pendingAdvances = $salaryModel->getAllAdvanceSalaries($advanceFilters);
                       </dt>
                       <dd>
                         <div class="text-lg font-medium text-gray-900">
-                          <?php echo SalaryModel::formatMoney($totalExpenses); ?>
+                          <?php echo $totalExpenses = $salaryModel->getTotalExpenses(); ?>
                         </div>
                       </dd>
                     </dl>
@@ -456,7 +406,7 @@ $pendingAdvances = $salaryModel->getAllAdvanceSalaries($advanceFilters);
                       </dt>
                       <dd>
                         <div class="text-lg font-medium text-gray-900">
-                          <?php echo $pendingTasks; ?>
+                          <?php echo $pendingTasks = $salaryModel->getPendingTasksCount(); ?>
                         </div>
                       </dd>
                     </dl>
