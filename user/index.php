@@ -50,6 +50,10 @@ require_once "../config/user-auth.php";
           <i class="fas fa-tasks w-5 h-5 mr-3"></i>
           <span>Upload Task</span>
         </a>
+        <a href="salary.php" class="flex items-center px-4 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700 hover:text-white">
+          <i class="fas fa-tasks w-5 h-5 mr-3"></i>
+          <span>Salary</span>
+        </a>
         <a href="user-invoices.php" class="flex items-center px-4 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700 hover:text-white">
           <i class="fas fa-file-invoice w-5 h-5 mr-3"></i>
           <span>Invoices</span>

@@ -181,6 +181,10 @@ $priority_class = $priority_classes[$task['priority']] ?? 'bg-gray-100 text-gray
           <i class="fas fa-file-invoice w-5 h-5 mr-3"></i>
           <span>Invoices</span>
         </a>
+        <a href="salary.php" class="flex items-center px-4 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700 hover:text-white">
+          <i class="fas fa-tasks w-5 h-5 mr-3"></i>
+          <span>Salary</span>
+        </a>
         <a href="user-support.php" class="flex items-center px-4 py-2 text-indigo-200 rounded-lg hover:bg-indigo-700 hover:text-white">
           <i class="fas fa-headset w-5 h-5 mr-3"></i>
           <span>Support</span>
