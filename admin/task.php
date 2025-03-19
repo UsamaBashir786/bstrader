@@ -489,11 +489,11 @@ $assignees = $conn->query($query_assignees)->fetch_all(MYSQLI_ASSOC);
                   <i class="fas fa-filter mr-2 h-5 w-5"></i>
                   Filter
                 </button>
-                <a href="tasks.php" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                <a href="task.php" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
                   <i class="fas fa-redo mr-2 h-5 w-5 text-gray-500"></i>
                   Reset
                 </a>
-                <a href="export-tasks.php" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                <a href="export-task.php" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
                   <i class="fas fa-download mr-2 h-5 w-5 text-gray-500"></i>
                   Export
                 </a>
@@ -504,24 +504,25 @@ $assignees = $conn->query($query_assignees)->fetch_all(MYSQLI_ASSOC);
           <!-- Task toggle buttons -->
           <div class="mt-6 bg-white shadow rounded-lg p-4">
             <div class="flex space-x-2 border-b border-gray-200">
-              <a href="tasks.php" class="py-2 px-4 text-sm font-medium text-primary-600 border-b-2 border-primary-600 focus:outline-none">
+              <a href="task.php" class="py-2 px-4 text-sm font-medium text-primary-600 border-b-2 border-primary-600 focus:outline-none">
                 All Tasks
               </a>
-              <a href="tasks.php?status=pending" class="py-2 px-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 focus:outline-none">
+              <a href="task.php?status=pending" class="py-2 px-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 focus:outline-none">
                 Pending
               </a>
-              <a href="tasks.php?status=in_progress" class="py-2 px-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 focus:outline-none">
+              <a href="task.php?status=in_progress" class="py-2 px-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 focus:outline-none">
                 In Progress
               </a>
-              <a href="tasks.php?status=completed" class="py-2 px-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 focus:outline-none">
+              <a href="task.php?status=completed" class="py-2 px-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 focus:outline-none">
                 Completed
               </a>
-              <a href="tasks.php?priority=urgent" class="py-2 px-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 focus:outline-none">
+              <a href="task.php?priority=urgent" class="py-2 px-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 focus:outline-none">
                 Urgent
               </a>
             </div>
           </div>
 
+          <!-- Tasks List -->
           <!-- Tasks List -->
           <div class="mt-6">
             <div class="bg-white shadow overflow-hidden sm:rounded-md">
@@ -634,7 +635,7 @@ $assignees = $conn->query($query_assignees)->fetch_all(MYSQLI_ASSOC);
                               </p>
                             </div>
                           </div>
-                          <!-- <div class="mt-2 flex justify-between items-center">
+                          <div class="mt-2 flex justify-between items-center">
                             <div class="flex items-center">
                               <span class="text-sm text-gray-500">Progress: <?php echo $task['status'] == 'completed' ? '100' : ($task['status'] == 'in_progress' ? '60' : '0'); ?>%</span>
                               <div class="ml-4 w-48 bg-gray-200 rounded-full h-2.5">
@@ -663,7 +664,7 @@ $assignees = $conn->query($query_assignees)->fetch_all(MYSQLI_ASSOC);
                                 <i class="fas fa-trash"></i>
                               </button>
                             </div>
-                          </div> -->
+                          </div>
                           <?php if (!empty($task['description'])): ?>
                             <div class="mt-2 text-sm text-gray-500">
                               <p class="truncate"><?php echo htmlspecialchars($task['description']); ?></p>
@@ -742,6 +743,7 @@ $assignees = $conn->query($query_assignees)->fetch_all(MYSQLI_ASSOC);
               </div>
             <?php endif; ?>
           </div>
+
         </div>
       </main>
     </div>

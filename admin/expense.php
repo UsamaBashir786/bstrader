@@ -1,3 +1,204 @@
+<?php
+// Database connection
+$conn = new mysqli('localhost', 'root', '', 'bs_trader');
+
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+// Create table if not exists
+$create_table_sql = "CREATE TABLE IF NOT EXISTS expenses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    category VARCHAR(255) NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    date DATE NOT NULL,
+    paid_by VARCHAR(255) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    payment_method VARCHAR(50) NOT NULL,
+    notes TEXT,
+    receipt_path VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)";
+
+if ($conn->query($create_table_sql) === FALSE) {
+    echo "Error creating table: " . $conn->error;
+}
+
+// Handle Add Expense form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['expense-title'])) {
+    $title = $_POST['expense-title'];
+    $category = $_POST['category'];
+    $amount = $_POST['amount'];
+    $date = $_POST['expense-date'];
+    $paid_by = $_POST['paid-by'];
+    $status = $_POST['status'];
+    $payment_method = $_POST['payment-method'];
+    $notes = $_POST['notes'];
+    $receipt_path = '';
+    
+    // Handle file upload if a file was submitted
+    if(isset($_FILES['file-upload']) && $_FILES['file-upload']['error'] == 0) {
+        $upload_dir = 'uploads/receipts/';
+        
+        // Create directory if it doesn't exist
+        if (!file_exists($upload_dir)) {
+            mkdir($upload_dir, 0777, true);
+        }
+        
+        $file_name = time() . '_' . basename($_FILES['file-upload']['name']);
+        $target_path = $upload_dir . $file_name;
+        
+        if(move_uploaded_file($_FILES['file-upload']['tmp_name'], $target_path)) {
+            $receipt_path = $target_path;
+        }
+    }
+    
+    $stmt = $conn->prepare("INSERT INTO expenses (title, category, amount, date, paid_by, status, payment_method, notes, receipt_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssdssssss", $title, $category, $amount, $date, $paid_by, $status, $payment_method, $notes, $receipt_path);
+    
+    if($stmt->execute()) {
+        // Redirect to prevent form resubmission
+        header("Location: " . $_SERVER['PHP_SELF'] . "?success=1");
+        exit();
+    } else {
+        $error_message = "Error: " . $stmt->error;
+    }
+    
+    $stmt->close();
+}
+
+// Handle Expense Deletion
+if(isset($_GET['delete']) && is_numeric($_GET['delete'])) {
+    $id = $_GET['delete'];
+    $stmt = $conn->prepare("DELETE FROM expenses WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $stmt->close();
+    
+    header("Location: " . $_SERVER['PHP_SELF'] . "?deleted=1");
+    exit();
+}
+
+// Process filter parameters
+$where_clause = "";
+$filter_params = [];
+$param_types = "";
+
+if(isset($_GET['filter'])) {
+    $conditions = [];
+    
+    if(!empty($_GET['category']) && $_GET['category'] != 'all') {
+        $conditions[] = "category = ?";
+        $filter_params[] = $_GET['category'];
+        $param_types .= "s";
+    }
+    
+    if(!empty($_GET['month']) && $_GET['month'] != 'all') {
+        $conditions[] = "MONTH(date) = ?";
+        $filter_params[] = $_GET['month'];
+        $param_types .= "i";
+    }
+    
+    if(!empty($_GET['year']) && $_GET['year'] != 'all') {
+        $conditions[] = "YEAR(date) = ?";
+        $filter_params[] = $_GET['year'];
+        $param_types .= "i";
+    }
+    
+    if(!empty($_GET['search'])) {
+        $conditions[] = "(title LIKE ? OR notes LIKE ?)";
+        $search_term = "%" . $_GET['search'] . "%";
+        $filter_params[] = $search_term;
+        $filter_params[] = $search_term;
+        $param_types .= "ss";
+    }
+    
+    if(count($conditions) > 0) {
+        $where_clause = "WHERE " . implode(" AND ", $conditions);
+    }
+}
+
+// Retrieve expenses with optional filtering
+$expenses = [];
+$query = "SELECT id, title, category, amount, date, paid_by, status, payment_method, notes, receipt_path 
+          FROM expenses 
+          $where_clause
+          ORDER BY date DESC";
+
+if(!empty($param_types)) {
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param($param_types, ...$filter_params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+} else {
+    $result = $conn->query($query);
+}
+
+while ($row = $result->fetch_assoc()) {
+    $expenses[] = $row;
+}
+
+// Calculate monthly summary
+$current_month = date('n');
+$current_year = date('Y');
+
+// Total expenses for current month
+$month_total_query = "SELECT SUM(amount) as total FROM expenses WHERE MONTH(date) = ? AND YEAR(date) = ?";
+$stmt = $conn->prepare($month_total_query);
+$stmt->bind_param("ii", $current_month, $current_year);
+$stmt->execute();
+$month_total_result = $stmt->get_result()->fetch_assoc();
+$month_total = $month_total_result['total'] ?? 0;
+
+// Category totals for current month
+$category_totals = [];
+$categories = ['Bills & Utilities', 'Purchases', 'Tax', 'Tea & Refreshments', 'Monthly Expenses'];
+
+foreach($categories as $category) {
+    $query = "SELECT SUM(amount) as category_total FROM expenses WHERE category = ? AND MONTH(date) = ? AND YEAR(date) = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("sii", $category, $current_month, $current_year);
+    $stmt->execute();
+    $result = $stmt->get_result()->fetch_assoc();
+    $category_totals[$category] = $result['category_total'] ?? 0;
+}
+
+// Calculate monthly totals for all months
+$monthly_totals_query = "SELECT 
+                            YEAR(date) as year, 
+                            MONTH(date) as month, 
+                            SUM(amount) as total,
+                            SUM(CASE WHEN category = 'Bills & Utilities' THEN amount ELSE 0 END) as bills_total,
+                            SUM(CASE WHEN category = 'Purchases' THEN amount ELSE 0 END) as purchases_total,
+                            SUM(CASE WHEN category = 'Tea & Refreshments' THEN amount ELSE 0 END) as tea_total,
+                            SUM(CASE WHEN category = 'Monthly Expenses' THEN amount ELSE 0 END) as monthly_total
+                        FROM expenses 
+                        GROUP BY YEAR(date), MONTH(date) 
+                        ORDER BY year DESC, month DESC";
+                        
+$monthly_totals_result = $conn->query($monthly_totals_query);
+$monthly_totals = [];
+
+while($row = $monthly_totals_result->fetch_assoc()) {
+    $monthly_totals[] = $row;
+}
+
+// Close the database connection
+$conn->close();
+
+// Helper function to get month name from number
+function getMonthName($month_number) {
+    return date("F", mktime(0, 0, 0, $month_number, 1));
+}
+
+// Helper function to format money amount
+function formatMoney($amount) {
+    return '$' . number_format($amount, 2);
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -35,7 +236,6 @@
 
 <body class="bg-gray-50">
   <div class="flex h-screen overflow-hidden">
-    <!-- Sidebar will be added by you -->
     <!-- Sidebar -->
     <aside class="hidden md:flex md:flex-shrink-0">
       <div class="flex flex-col w-64">
@@ -113,6 +313,7 @@
         </div>
       </div>
     </aside>
+    
     <!-- Main content -->
     <div class="flex flex-col flex-1 overflow-hidden">
       <!-- Top navbar -->
@@ -220,25 +421,41 @@
             </div>
           </div>
 
+          <?php if (isset($_GET['success'])): ?>
+          <div class="mt-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4" role="alert">
+            <p>Expense added successfully!</p>
+          </div>
+          <?php endif; ?>
+
+          <?php if (isset($_GET['deleted'])): ?>
+          <div class="mt-4 bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4" role="alert">
+            <p>Expense deleted successfully!</p>
+          </div>
+          <?php endif; ?>
+
+          <?php if (isset($error_message)): ?>
+          <div class="mt-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4" role="alert">
+            <p><?php echo $error_message; ?></p>
+          </div>
+          <?php endif; ?>
+
           <!-- Expense Summary Cards -->
-          <div
-            class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <!-- Card 1 -->
+          <div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <!-- Card 1 - Total Expenses -->
             <div class="bg-white overflow-hidden shadow rounded-lg">
               <div class="p-5">
                 <div class="flex items-center">
                   <div class="flex-shrink-0 bg-red-100 rounded-md p-3">
-                    <i
-                      class="fas fa-file-invoice-dollar text-red-600 h-6 w-6"></i>
+                    <i class="fas fa-file-invoice-dollar text-red-600 h-6 w-6"></i>
                   </div>
                   <div class="ml-5 w-0 flex-1">
                     <dl>
                       <dt class="text-sm font-medium text-gray-500 truncate">
-                        Total Expenses (March)
+                        Total Expenses (<?php echo date('F'); ?>)
                       </dt>
                       <dd>
                         <div class="text-lg font-medium text-gray-900">
-                          $4,200
+                          <?php echo formatMoney($month_total); ?>
                         </div>
                       </dd>
                     </dl>
@@ -247,7 +464,7 @@
               </div>
             </div>
 
-            <!-- Card 2 -->
+            <!-- Card 2 - Bills & Utilities -->
             <div class="bg-white overflow-hidden shadow rounded-lg">
               <div class="p-5">
                 <div class="flex items-center">
@@ -261,7 +478,7 @@
                       </dt>
                       <dd>
                         <div class="text-lg font-medium text-gray-900">
-                          $1,250
+                          <?php echo formatMoney($category_totals['Bills & Utilities']); ?>
                         </div>
                       </dd>
                     </dl>
@@ -270,7 +487,7 @@
               </div>
             </div>
 
-            <!-- Card 3 -->
+            <!-- Card 3 - Purchases -->
             <div class="bg-white overflow-hidden shadow rounded-lg">
               <div class="p-5">
                 <div class="flex items-center">
@@ -284,7 +501,7 @@
                       </dt>
                       <dd>
                         <div class="text-lg font-medium text-gray-900">
-                          $2,350
+                          <?php echo formatMoney($category_totals['Purchases']); ?>
                         </div>
                       </dd>
                     </dl>
@@ -293,7 +510,7 @@
               </div>
             </div>
 
-            <!-- Card 4 -->
+            <!-- Card 4 - Tea & Misc -->
             <div class="bg-white overflow-hidden shadow rounded-lg">
               <div class="p-5">
                 <div class="flex items-center">
@@ -307,7 +524,7 @@
                       </dt>
                       <dd>
                         <div class="text-lg font-medium text-gray-900">
-                          $600
+                          <?php echo formatMoney($category_totals['Tea & Refreshments']); ?>
                         </div>
                       </dd>
                     </dl>
@@ -319,71 +536,81 @@
 
           <!-- Expense filters and search -->
           <div class="mt-6 bg-white shadow rounded-lg p-4">
-            <div class="flex flex-col md:flex-row justify-between gap-4">
+            <form action="" method="GET" class="flex flex-col md:flex-row justify-between gap-4">
               <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                 <div class="relative rounded-md shadow-sm">
-                  <div
-                    class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <i class="fas fa-search text-gray-400"></i>
                   </div>
                   <input
                     type="text"
+                    name="search"
                     class="focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 pr-12 sm:text-sm border-gray-300 rounded-md"
-                    placeholder="Search expense..." />
+                    placeholder="Search expense..."
+                    value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>" />
                 </div>
                 <div>
                   <select
+                    name="category"
                     class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                    <option value="">All Categories</option>
-                    <option value="bills">Bills & Utilities</option>
-                    <option value="purchases">Purchases</option>
-                    <option value="tax">Tax</option>
-                    <option value="tea">Tea & Refreshments</option>
-                    <option value="monthly">Monthly Expenses</option>
+                    <option value="all">All Categories</option>
+                    <option value="Bills & Utilities" <?php echo (isset($_GET['category']) && $_GET['category'] == 'Bills & Utilities') ? 'selected' : ''; ?>>Bills & Utilities</option>
+                    <option value="Purchases" <?php echo (isset($_GET['category']) && $_GET['category'] == 'Purchases') ? 'selected' : ''; ?>>Purchases</option>
+                    <option value="Tax" <?php echo (isset($_GET['category']) && $_GET['category'] == 'Tax') ? 'selected' : ''; ?>>Tax</option>
+                    <option value="Tea & Refreshments" <?php echo (isset($_GET['category']) && $_GET['category'] == 'Tea & Refreshments') ? 'selected' : ''; ?>>Tea & Refreshments</option>
+                    <option value="Monthly Expenses" <?php echo (isset($_GET['category']) && $_GET['category'] == 'Monthly Expenses') ? 'selected' : ''; ?>>Monthly Expenses</option>
                   </select>
                 </div>
                 <div>
                   <select
+                    name="month"
                     class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                    <option value="">All Months</option>
-                    <option value="january">January</option>
-                    <option value="february">February</option>
-                    <option value="march">March</option>
-                    <option value="april">April</option>
-                    <option value="may">May</option>
-                    <option value="june">June</option>
-                    <option value="july">July</option>
-                    <option value="august">August</option>
-                    <option value="september">September</option>
-                    <option value="october">October</option>
-                    <option value="november">November</option>
-                    <option value="december">December</option>
+                    <option value="all">All Months</option>
+                    <?php for($i = 1; $i <= 12; $i++): ?>
+                      <option value="<?php echo $i; ?>" <?php echo (isset($_GET['month']) && $_GET['month'] == $i) ? 'selected' : ''; ?>>
+                        <?php echo date('F', mktime(0, 0, 0, $i, 1)); ?>
+                      </option>
+                    <?php endfor; ?>
                   </select>
                 </div>
                 <div>
                   <select
+                    name="year"
                     class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                    <option value="">Year 2025</option>
-                    <option value="2024">Year 2024</option>
-                    <option value="2023">Year 2023</option>
+                    <option value="all">All Years</option>
+                    <?php 
+                      $current_year = date('Y');
+                      for($i = $current_year; $i >= $current_year-2; $i--): 
+                    ?>
+                      <option value="<?php echo $i; ?>" <?php echo (isset($_GET['year']) && $_GET['year'] == $i) ? 'selected' : ''; ?>>
+                        Year <?php echo $i; ?>
+                      </option>
+                    <?php endfor; ?>
                   </select>
                 </div>
               </div>
               <div class="flex items-center gap-2">
                 <button
-                  type="button"
+                  type="submit"
+                  name="filter"
+                  value="1"
                   class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
                   <i class="fas fa-filter mr-2 h-5 w-5 text-gray-500"></i>
                   Filter
                 </button>
+                <a href="<?php echo $_SERVER['PHP_SELF']; ?>" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                  <i class="fas fa-sync-alt mr-2 h-5 w-5 text-gray-500"></i>
+                  Reset
+                </a>
                 <button
                   type="button"
+                  onclick="window.location.href='export-expenses.php'"
                   class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
                   <i class="fas fa-download mr-2 h-5 w-5 text-gray-500"></i>
                   Export
                 </button>
               </div>
-            </div>
+            </form>
           </div>
 
           <!-- Expense Table -->
@@ -435,226 +662,58 @@
                         </tr>
                       </thead>
                       <tbody class="bg-white divide-y divide-gray-200">
-                        <tr>
-                          <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">
-                              Electricity Bill
-                            </div>
-                            <div class="text-sm text-gray-500">
-                              March 2025
-                            </div>
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            Bills & Utilities
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            March 8, 2025
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            $350
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            Ayesha Malik
-                          </td>
-                          <td class="px-6 py-4 whitespace-nowrap">
-                            <span
-                              class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                              Paid
-                            </span>
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <a
-                              href="#"
-                              class="text-primary-600 hover:text-primary-900 mr-3"><i class="fas fa-edit"></i></a>
-                            <a
-                              href="#"
-                              class="text-red-600 hover:text-red-900 mr-3"><i class="fas fa-trash"></i></a>
-                            <a
-                              href="#"
-                              class="text-gray-600 hover:text-gray-900"><i class="fas fa-eye"></i></a>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">
-                              Office Supplies
-                            </div>
-                            <div class="text-sm text-gray-500">
-                              March 2025
-                            </div>
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            Purchases
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            March 5, 2025
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            $450
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            Sara Ali
-                          </td>
-                          <td class="px-6 py-4 whitespace-nowrap">
-                            <span
-                              class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                              Paid
-                            </span>
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <a
-                              href="#"
-                              class="text-primary-600 hover:text-primary-900 mr-3"><i class="fas fa-edit"></i></a>
-                            <a
-                              href="#"
-                              class="text-red-600 hover:text-red-900 mr-3"><i class="fas fa-trash"></i></a>
-                            <a
-                              href="#"
-                              class="text-gray-600 hover:text-gray-900"><i class="fas fa-eye"></i></a>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">
-                              Internet Bill
-                            </div>
-                            <div class="text-sm text-gray-500">
-                              March 2025
-                            </div>
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            Bills & Utilities
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            March 10, 2025
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            $150
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            Bilal Ahmad
-                          </td>
-                          <td class="px-6 py-4 whitespace-nowrap">
-                            <span
-                              class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                              Paid
-                            </span>
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <a
-                              href="#"
-                              class="text-primary-600 hover:text-primary-900 mr-3"><i class="fas fa-edit"></i></a>
-                            <a
-                              href="#"
-                              class="text-red-600 hover:text-red-900 mr-3"><i class="fas fa-trash"></i></a>
-                            <a
-                              href="#"
-                              class="text-gray-600 hover:text-gray-900"><i class="fas fa-eye"></i></a>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">
-                              Office Refreshments
-                            </div>
-                            <div class="text-sm text-gray-500">
-                              March 2025
-                            </div>
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            Tea & Refreshments
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            March 2, 2025
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            $200
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            Ahmed Khan
-                          </td>
-                          <td class="px-6 py-4 whitespace-nowrap">
-                            <span
-                              class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                              Paid
-                            </span>
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <a
-                              href="#"
-                              class="text-primary-600 hover:text-primary-900 mr-3"><i class="fas fa-edit"></i></a>
-                            <a
-                              href="#"
-                              class="text-red-600 hover:text-red-900 mr-3"><i class="fas fa-trash"></i></a>
-                            <a
-                              href="#"
-                              class="text-gray-600 hover:text-gray-900"><i class="fas fa-eye"></i></a>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">
-                              New Equipment
-                            </div>
-                            <div class="text-sm text-gray-500">
-                              March 2025
-                            </div>
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            Purchases
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            March 15, 2025
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            $1,900
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            Ayesha Malik
-                          </td>
-                          <td class="px-6 py-4 whitespace-nowrap">
-                            <span
-                              class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                              Pending
-                            </span>
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <a
-                              href="#"
-                              class="text-primary-600 hover:text-primary-900 mr-3"><i class="fas fa-edit"></i></a>
-                            <a
-                              href="#"
-                              class="text-red-600 hover:text-red-900 mr-3"><i class="fas fa-trash"></i></a>
-                            <a
-                              href="#"
-                              class="text-gray-600 hover:text-gray-900"><i class="fas fa-eye"></i></a>
-                          </td>
-                        </tr>
+                        <?php if(count($expenses) > 0): ?>
+                          <?php foreach($expenses as $expense): ?>
+                            <tr>
+                              <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">
+                                  <?php echo htmlspecialchars($expense['title']); ?>
+                                </div>
+                                <div class="text-sm text-gray-500">
+                                  <?php echo date('F Y', strtotime($expense['date'])); ?>
+                                </div>
+                              </td>
+                              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <?php echo htmlspecialchars($expense['category']); ?>
+                              </td>
+                              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <?php echo date('F j, Y', strtotime($expense['date'])); ?>
+                              </td>
+                              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                $<?php echo number_format($expense['amount'], 2); ?>
+                              </td>
+                              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <?php echo htmlspecialchars($expense['paid_by']); ?>
+                              </td>
+                              <td class="px-6 py-4 whitespace-nowrap">
+                                <?php if($expense['status'] == 'Paid'): ?>
+                                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    Paid
+                                  </span>
+                                <?php elseif($expense['status'] == 'Pending'): ?>
+                                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    Pending
+                                  </span>
+                                <?php else: ?>
+                                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                    Rejected
+                                  </span>
+                                <?php endif; ?>
+                              </td>
+                              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <a href="edit-expense.php?id=<?php echo $expense['id']; ?>" class="text-primary-600 hover:text-primary-900 mr-3"><i class="fas fa-edit"></i></a>
+                                <a href="javascript:void(0);" onclick="confirmDelete(<?php echo $expense['id']; ?>)" class="text-red-600 hover:text-red-900 mr-3"><i class="fas fa-trash"></i></a>
+                                <a href="view-expense.php?id=<?php echo $expense['id']; ?>" class="text-gray-600 hover:text-gray-900"><i class="fas fa-eye"></i></a>
+                              </td>
+                            </tr>
+                          <?php endforeach; ?>
+                        <?php else: ?>
+                          <tr>
+                            <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
+                              No expenses found. <a href="javascript:void(0);" onclick="openModal()" class="text-primary-600 hover:text-primary-900">Add an expense</a>.
+                            </td>
+                          </tr>
+                        <?php endif; ?>
                       </tbody>
                     </table>
                   </div>
@@ -680,9 +739,9 @@
                 class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
                   <p class="text-sm text-gray-700">
-                    Showing <span class="font-medium">1</span> to
-                    <span class="font-medium">5</span> of
-                    <span class="font-medium">15</span> expenses
+                    Showing <span class="font-medium"><?php echo count($expenses) > 0 ? 1 : 0; ?></span> to
+                    <span class="font-medium"><?php echo count($expenses); ?></span> of
+                    <span class="font-medium"><?php echo count($expenses); ?></span> expenses
                   </p>
                 </div>
                 <div>
@@ -703,21 +762,74 @@
                     </a>
                     <a
                       href="#"
-                      class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
-                      2
-                    </a>
-                    <a
-                      href="#"
-                      class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
-                      3
-                    </a>
-                    <a
-                      href="#"
                       class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                       <span class="sr-only">Next</span>
                       <i class="fas fa-chevron-right h-5 w-5"></i>
                     </a>
                   </nav>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Monthly Summary Table -->
+          <div class="mt-8">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Monthly Expense Summary</h3>
+            <div class="flex flex-col">
+              <div class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+                  <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+                    <table class="min-w-full divide-y divide-gray-200">
+                      <thead class="bg-gray-50">
+                        <tr>
+                          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Month
+                          </th>
+                          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Total Expenses
+                          </th>
+                          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Bills & Utilities
+                          </th>
+                          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Purchases
+                          </th>
+                          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Tea & Refreshments
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody class="bg-white divide-y divide-gray-200">
+                        <?php if(count($monthly_totals) > 0): ?>
+                          <?php foreach($monthly_totals as $month_data): ?>
+                            <tr>
+                              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                <?php echo getMonthName($month_data['month']) . ' ' . $month_data['year']; ?>
+                              </td>
+                              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                $<?php echo number_format($month_data['total'], 2); ?>
+                              </td>
+                              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                $<?php echo number_format($month_data['bills_total'], 2); ?>
+                              </td>
+                              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                $<?php echo number_format($month_data['purchases_total'], 2); ?>
+                              </td>
+                              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                $<?php echo number_format($month_data['tea_total'], 2); ?>
+                              </td>
+                            </tr>
+                          <?php endforeach; ?>
+                        <?php else: ?>
+                          <tr>
+                            <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                              No monthly summary available yet.
+                            </td>
+                          </tr>
+                        <?php endif; ?>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </div>
@@ -754,7 +866,7 @@
               Add New Expense
             </h3>
             <div class="mt-4">
-              <form action="#" method="POST">
+              <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="POST" enctype="multipart/form-data">
                 <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                   <div class="sm:col-span-6">
                     <label
@@ -765,7 +877,8 @@
                         type="text"
                         name="expense-title"
                         id="expense-title"
-                        class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md" />
+                        class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                        required />
                     </div>
                   </div>
                   <div class="sm:col-span-3">
@@ -776,13 +889,14 @@
                       <select
                         id="category"
                         name="category"
-                        class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                        class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                        required>
                         <option value="">Select Category</option>
-                        <option value="bills">Bills & Utilities</option>
-                        <option value="purchases">Purchases</option>
-                        <option value="tax">Tax</option>
-                        <option value="tea">Tea & Refreshments</option>
-                        <option value="monthly">Monthly Expenses</option>
+                        <option value="Bills & Utilities">Bills & Utilities</option>
+                        <option value="Purchases">Purchases</option>
+                        <option value="Tax">Tax</option>
+                        <option value="Tea & Refreshments">Tea & Refreshments</option>
+                        <option value="Monthly Expenses">Monthly Expenses</option>
                       </select>
                     </div>
                   </div>
@@ -795,7 +909,9 @@
                         type="date"
                         name="expense-date"
                         id="expense-date"
-                        class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md" />
+                        class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md" 
+                        value="<?php echo date('Y-m-d'); ?>"
+                        required />
                     </div>
                   </div>
                   <div class="sm:col-span-3">
@@ -808,11 +924,13 @@
                         <span class="text-gray-500 sm:text-sm">$</span>
                       </div>
                       <input
-                        type="text"
+                        type="number"
+                        step="0.01"
                         name="amount"
                         id="amount"
                         class="focus:ring-primary-500 focus:border-primary-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md"
-                        placeholder="0.00" />
+                        placeholder="0.00"
+                        required />
                     </div>
                   </div>
                   <div class="sm:col-span-3">
@@ -823,13 +941,14 @@
                       <select
                         id="paid-by"
                         name="paid-by"
-                        class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                        class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                        required>
                         <option value="">Select Employee</option>
-                        <option value="ahmed">Ahmed Khan</option>
-                        <option value="sara">Sara Ali</option>
-                        <option value="bilal">Bilal Ahmad</option>
-                        <option value="ayesha">Ayesha Malik</option>
-                        <option value="omar">Omar Farooq</option>
+                        <option value="Ahmed Khan">Ahmed Khan</option>
+                        <option value="Sara Ali">Sara Ali</option>
+                        <option value="Bilal Ahmad">Bilal Ahmad</option>
+                        <option value="Ayesha Malik">Ayesha Malik</option>
+                        <option value="Omar Farooq">Omar Farooq</option>
                       </select>
                     </div>
                   </div>
@@ -841,10 +960,11 @@
                       <select
                         id="status"
                         name="status"
-                        class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md">
-                        <option value="paid">Paid</option>
-                        <option value="pending">Pending</option>
-                        <option value="rejected">Rejected</option>
+                        class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                        required>
+                        <option value="Paid">Paid</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Rejected">Rejected</option>
                       </select>
                     </div>
                   </div>
@@ -856,11 +976,12 @@
                       <select
                         id="payment-method"
                         name="payment-method"
-                        class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md">
-                        <option value="cash">Cash</option>
-                        <option value="bank">Bank Transfer</option>
-                        <option value="card">Credit Card</option>
-                        <option value="other">Other</option>
+                        class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                        required>
+                        <option value="Cash">Cash</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="Credit Card">Credit Card</option>
+                        <option value="Other">Other</option>
                       </select>
                     </div>
                   </div>
@@ -970,16 +1091,12 @@
 
     // Mobile sidebar toggle
     const sidebarToggle = document.getElementById("sidebarToggle");
-    const mobileSidebar = document.getElementById("mobile-sidebar");
-    const closeSidebar = document.getElementById("closeSidebar");
-
-    sidebarToggle.addEventListener("click", () => {
-      mobileSidebar.classList.remove("hidden");
-    });
-
-    closeSidebar.addEventListener("click", () => {
-      mobileSidebar.classList.add("hidden");
-    });
+    
+    if (sidebarToggle) {
+      sidebarToggle.addEventListener("click", () => {
+        // Add your sidebar toggle logic here
+      });
+    }
 
     // Modal functions
     function openModal() {
@@ -994,6 +1111,29 @@
     document
       .getElementById("modalOverlay")
       .addEventListener("click", closeModal);
+      
+    // Confirm delete function
+    function confirmDelete(id) {
+      if (confirm("Are you sure you want to delete this expense?")) {
+        window.location.href = "<?php echo $_SERVER['PHP_SELF']; ?>?delete=" + id;
+      }
+    }
+    
+    // Show success message for a limited time
+    const successAlert = document.querySelector('.bg-green-100');
+    const deletedAlert = document.querySelector('.bg-blue-100');
+    
+    if (successAlert || deletedAlert) {
+      setTimeout(() => {
+        if (successAlert) successAlert.style.display = 'none';
+        if (deletedAlert) deletedAlert.style.display = 'none';
+      }, 5000);
+    }
+    
+    <?php if (isset($_GET['success']) || isset($_GET['deleted'])): ?>
+    // Push the success/delete URL state without the query parameters
+    window.history.replaceState({}, document.title, "<?php echo $_SERVER['PHP_SELF']; ?>");
+    <?php endif; ?>
   </script>
 </body>
 

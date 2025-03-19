@@ -110,6 +110,6 @@ if ($response['status'] === 'success') {
 }
 
 // Redirect back to tasks page
-header('Location: tasks.php');
+header('Location: task.php');
 exit;
 ?>

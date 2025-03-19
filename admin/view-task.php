@@ -6,7 +6,7 @@ require_once "../config/config.php";
 // Check if task ID is provided
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     // Redirect to tasks page if no valid ID
-    header('Location: tasks.php');
+    header('Location: task.php');
     exit;
 }
 
@@ -20,7 +20,7 @@ $result = $stmt->get_result();
 
 if ($result->num_rows === 0) {
     // Task not found, redirect to tasks page
-    header('Location: tasks.php');
+    header('Location: task.php');
     exit;
 }
 
@@ -174,7 +174,7 @@ switch ($task['priority']) {
           <div class="pb-5 border-b border-gray-200 sm:flex sm:items-center sm:justify-between">
             <h3 class="text-lg leading-6 font-medium text-gray-900">Task Details</h3>
             <div class="mt-3 flex sm:mt-0 sm:ml-4">
-              <a href="tasks.php" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+              <a href="task.php" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
                 <i class="fas fa-arrow-left mr-2 -ml-1 h-5 w-5"></i>
                 Back to Tasks
               </a>
